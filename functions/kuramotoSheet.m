@@ -260,6 +260,8 @@ for t = 2:simtime/dt
 	PP(:,t) = sin(mod(theta_t(:,t),2*pi));
 
 	if plasticity(1)
+        % Currently ignores spatial distance between oscillators, should
+        % it?
          connectivity = connectivity - dt*plasticity(2)* ...
         ( plasticity(3) * cos(phasedifferences) - connectivity );
 
