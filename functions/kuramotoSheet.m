@@ -193,7 +193,8 @@ connectivity(find(eye(M*N))) = 0;
 
 % Hu, X., Boccaletti, S., Huang, W., Zhang, X., Liu, Z., Guan, S., & Lai, C.-H. (2014). Exact solution for first-order synchronization transition in a generalized Kuramoto model. Scientific Reports, 4, 7262–6. http://doi.org/10.1038/srep07262
 
-
+% Do not use scaling combined with plasticity? Or incorporate it
+% in the plasticity function?
 if scale_to_intrinsic_freq
 	connectivity = bsxfun(@times, omega_i, connectivity) * scaling / NO;
 else
@@ -262,7 +263,7 @@ for t = 2:simtime/dt
 	if plasticity(1)
         % Currently ignores spatial distance between oscillators, should
         % it?
-         connectivity = connectivity - dt*plasticity(2)* ...
+         connectivity = connectivity + dt*plasticity(2)* ...
         ( plasticity(3) * cos(phasedifferences) - connectivity );
 
 	end
@@ -274,13 +275,13 @@ for t = 2:simtime/dt
 		GP = theta_t(:,t);
 		MP = circ_mean(GP)+pi;
 		
-		k(t) = mean( exp(i*(bsxfun(@minus, GP, MP))));
+		k(t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
 	else
 		for ui = unique(idx)'
 			GP = theta_t(find(idx==ui),t);
 			MP = circ_mean(GP)+pi;
 			
-			k(ui,t) = mean( exp(i*(bsxfun(@minus, GP, MP))));
+			k(ui,t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
 		end
 	end
 
@@ -353,7 +354,8 @@ if plotme
 
 			drawnow
 			if makemovie
-				MOV(t) = getframe(ffff);
+                % TODO first frame of movie missing t=1???
+				MOV(t-1) = getframe(f);
 			end
 
 		end

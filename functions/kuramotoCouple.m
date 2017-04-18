@@ -21,6 +21,7 @@ function out = kuramotoCouple(varargin)
     p.addParameter('init_cond', []) % in Hz
     p.addParameter('omega_std', 2) % in Hz
     p.addParameter('oscillators', [])
+    p.addParameter('connectivity', []);
 
     p.parse(varargin{:});
 
@@ -31,6 +32,7 @@ function out = kuramotoCouple(varargin)
     omega_std = p.Results.omega_std;
     init_cond = p.Results.init_cond;
     oscillators = p.Results.oscillators;
+    connectivity = p.Results.connectivity;
 
 % [=================================================================]
 %  randomize oscillator intrinsic frequencies
@@ -47,9 +49,11 @@ function out = kuramotoCouple(varargin)
 %  connectivity
 % [=================================================================]
 
-    connectivity = ones(2) - eye(2);
-
-    connectivity = scaling*connectivity;
+    if isempty(connectivity)
+        connectivity = (ones(2) - eye(2))*scaling;
+    else
+        connectivity = scaling*connectivity;
+    end
 
 % [=================================================================]
 %  randomize initial condition
@@ -84,6 +88,12 @@ function out = kuramotoCouple(varargin)
         theta_t(:,t) = theta_t(:,t-1) + dt*( omega_i + summed_sin_diffs  );
 
         PP(:,t) = sin(mod(theta_t(:,t),2*pi));
+        
+%        if plasticity(1)
+%             connectivity = connectivity + dt*plasticity(2)* ...
+%            ( plasticity(3) * cos(phasedifferences) - connectivity );
+        
+%        end
 
         % [=================================================================]
         %  order parameter
@@ -105,7 +115,7 @@ function out = kuramotoCouple(varargin)
         plot(linspace(0,simtime, simtime*dt^-1), mod(theta_t,2*pi)')
         ylabel('phase (theta)')
         subplot(2,2,2)
-        imagesc(connectivity), colorbar
+        imagesc(connectivity), colorbar %% TODO, plot connectivity over time? movie?
         title('connectivity')
         subplot(2,2,3)
         plot(linspace(0,simtime, simtime*dt^-1), sin(theta_t'))
@@ -148,5 +158,7 @@ function out = kuramotoCouple(varargin)
         out.oscillators = omega_i/(2*pi);
         out.orderparameter = abs(k);
         out.meanphase = MP;
+        % out.connectivity = connectivity; %%TODO, record connectivity in
+        % array of matrices (struct or whatever, just record them)
     end
 end
