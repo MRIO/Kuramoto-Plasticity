@@ -40,7 +40,7 @@ function out = kuramotoSheet(varargin)
 
 gpu = 0;
 
-anim = 1; makemovie = 1;
+anim = 1; makemovie = 0;
 
 % [=================================================================]
 %  parse inputs
@@ -265,7 +265,6 @@ for t = 2:simtime/dt
         % it?
          connectivity = connectivity + dt*plasticity(2)* ...
         ( plasticity(3) * cos(phasedifferences) - connectivity );
-
 	end
 
 	% [=================================================================]
