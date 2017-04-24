@@ -2,9 +2,9 @@
 clear
 
 plotResult = 0;
-alpha = 10;
-epsilon = 1;
-connectivity = 0;
+alpha = 5;
+epsilon = 0.1;
+connectivity = 2;
 oscillators = [11;10]; % in hz
 
 %% Model
@@ -29,7 +29,7 @@ f = figure(1)
 clf
 
 
-t=linspace(0,2*pi,1000);
+t=linspace(-2*pi,4*pi,1000);
 
 y=1./sin(t); %phi nullcline
 y2=alpha_tilde*cos(t); %K_tilde nullcline
@@ -50,7 +50,7 @@ for i=2:size
     
     cla
     
-    plot(sin(mod(phi(1:i),2*pi)),K_tilde(1:i))
+    plot(phi(1:i),K_tilde(1:i))
     %scatter(mod(phi(i),2*pi),K_tilde(i))
     plot(t,y) %phi null
     plot(t,y2) %K_tilde null

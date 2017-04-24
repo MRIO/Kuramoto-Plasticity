@@ -254,7 +254,7 @@ for t = 2:simtime/dt
 
 	phasedifferences_W = connectivity.*sin(phasedifferences);
 	
-	summed_sin_diffs = mean(phasedifferences_W,2);
+	summed_sin_diffs = mean(phasedifferences_W,2); %ignore self?
 
 	theta_t(:,t) = theta_t(:,t-1) + dt*( omega_i + summed_sin_diffs  ) + ou_noise(:,t);
 
