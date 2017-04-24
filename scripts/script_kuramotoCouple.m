@@ -2,23 +2,28 @@
 clear
 
 plotResult = 0;
-alpha = 5;
-epsilon = 0.1;
+alpha = 2.5;
+epsilon = 1;
 connectivity = 2;
 oscillators = [11;10]; % in hz
 
 %% Model
-result = kuramotoCouple(1,plotResult,'time', 2,'connectivity', (ones(2)-eye(2))*connectivity,'plasticity',[1 epsilon alpha], 'oscillators', oscillators*2*pi)
+result = kuramotoCouple(1,plotResult,'time', 2, 'connectivity', (ones(2)-eye(2))*connectivity,'plasticity',[1 epsilon alpha], 'oscillators', oscillators*2*pi)
 
-%fuck it
-size=size(result.connectivity,2);
-K = zeros(1,size);
-for i=1:size
-    K(i)=result.connectivity{i}(2);
-end
+% %fuck it
+% size=size(result.connectivity,2);
+% K = zeros(1,size);
+% for i=1:size
+%     K(i)=result.connectivity{i}(2);
+% end
 
-phi = result.phase(1,:) - result.phase(2,:);
+K = result.Kval;
+size = size(K,2);
+
+%phi = result.phase(1,:) - result.phase(2,:);
+phi = result.Dphase;
 DOmega = result.oscillators(1)-result.oscillators(2);
+%DOmega = result.Domega;
 
 K_tilde = K/DOmega;
 alpha_tilde = alpha/DOmega;

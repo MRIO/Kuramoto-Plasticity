@@ -48,6 +48,8 @@ function out = kuramotoCouple(varargin)
     else
         omega_i = (randn(2,1)*omega_std+omega_mean)*2*pi;
     end
+    
+    Domega = omega_i(1)-omega_i(2);
 
 % [=================================================================]
 %  connectivity
@@ -58,6 +60,8 @@ function out = kuramotoCouple(varargin)
     else
         connectivity{1} = scaling*connectivity{1};
     end
+    
+    Kval(1) = connectivity{1}(2);
 
 % [=================================================================]
 %  randomize initial condition
@@ -69,7 +73,9 @@ function out = kuramotoCouple(varargin)
         % disp('using initial condition (assuming between 0 and 2pi)')
         theta_t(:,1) = init_cond;
     end
-
+    
+    Dtheta(1) = theta_t(1,1)-theta_t(2,1);
+    
     k = zeros(1,simtime*(1/dt));
     PP = zeros(2,simtime/dt);
 
@@ -80,19 +86,26 @@ function out = kuramotoCouple(varargin)
 
     for t = 2:simtime/dt
 
-        phasedifferences = bsxfun(@minus, theta_t(:,t-1)',theta_t(:,t-1));
-
-        phasedifferences_W = connectivity{t-1}.*sin(phasedifferences);
-
-        summed_sin_diffs = mean(phasedifferences_W,2);
-
-        theta_t(:,t) = theta_t(:,t-1) + dt*( omega_i + summed_sin_diffs  );
-
-        PP(:,t) = sin(mod(theta_t(:,t),2*pi));
+%         phasedifferences = bsxfun(@minus, theta_t(:,t-1)',theta_t(:,t-1));
+% 
+%         phasedifferences_W = connectivity{t-1}.*sin(phasedifferences);
+% 
+%         summed_sin_diffs = mean(phasedifferences_W,2);
+% 
+%         theta_t(:,t) = theta_t(:,t-1) + dt*( omega_i + summed_sin_diffs  );
+% 
+%         PP(:,t) = sin(mod(theta_t(:,t),2*pi));
+        
+        % %
+        
+        Dtheta(t) = Dtheta(t-1) + dt*(Domega - Kval(t-1)*sin(Dtheta(t-1)));
+        
         
         if plasticity(1)
-             connectivity{t} = connectivity{t-1} + dt*plasticity(2)* ...
-            ( plasticity(3) * cos(phasedifferences) - connectivity{t-1} );
+            %  connectivity{t} = connectivity{t-1} + dt*plasticity(2)* ...
+            % ( plasticity(3) * cos(phasedifferences) - connectivity{t-1} );
+            
+            Kval(t) = Kval(t-1) + dt*(plasticity(2)*(plasticity(3)*cos(Dtheta(t)) - Kval(t-1)));
         else
             connectivity{t} = connectivity{t-1};
         end
@@ -100,10 +113,10 @@ function out = kuramotoCouple(varargin)
         % [=================================================================]
         %  order parameter
         % [=================================================================]
-        GP = theta_t(:,t);
-        MP = circ_mean(GP)+pi;
-
-        k(t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
+%         GP = theta_t(:,t);
+%         MP = circ_mean(GP)+pi;
+% 
+%         k(t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
     end
 
     writeOutput()
@@ -164,11 +177,14 @@ function out = kuramotoCouple(varargin)
     function writeOutput()
         out.state = PP;
         out.phase = theta_t;
+        out.Dphase = Dtheta;
         out.parameters = p.Results;
         out.oscillators = omega_i/(2*pi);
-        out.orderparameter = abs(k);
-        out.meanphase = MP;
-        out.connectivity = connectivity;
+        out.Domega = Domega;
+        %out.orderparameter = abs(k);
+        %out.meanphase = MP;
+        %out.connectivity = connectivity;
+        out.Kval = Kval;
         out.timesteps = simtime/dt;
     end
 end
