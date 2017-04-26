@@ -40,7 +40,7 @@ function out = kuramotoSheet(varargin)
 
 gpu = 0;
 
-anim = 1; makemovie = 0;
+anim = 0; makemovie = 0;
 
 % [=================================================================]
 %  parse inputs
@@ -93,7 +93,7 @@ anim = 1; makemovie = 0;
 
 rng(seed,'twister')
 
-if oscillators
+if isvector(oscillators)
 	omega_i = oscillators;
 else
 	omega_i = (randn(N*M,1)*omega_std+omega_mean)*2*pi;
@@ -247,6 +247,9 @@ end
 %  simulate
 % [=================================================================]
 
+% temp
+adjacency{1} = connectivity;
+
 if plotme; f = figure(100); a(1) = subplot(121);a(2) = subplot(122); end
 for t = 2:simtime/dt
 
@@ -265,6 +268,7 @@ for t = 2:simtime/dt
         % it?
          connectivity = connectivity + dt*plasticity(2)* ...
         ( plasticity(3) * cos(phasedifferences) - connectivity );
+        adjacency{t} = connectivity;
 	end
 
 	% [=================================================================]
@@ -381,6 +385,8 @@ out.phase = theta_t;
 out.parameters = p.Results;
 out.oscillators = omega_i/(2*pi);
 out.orderparameter = abs(k);
+out.connectivity = connectivity;
+out.adjacency = adjacency;
 out.meanphase = MP;
 out.seed = seed;
  if makemovie && plotme ; out.movie = MOV; end
