@@ -40,7 +40,7 @@ function out = kuramotoSheet(varargin)
 
 gpu = 0;
 
-anim = 0; makemovie = 0;
+anim = 1; makemovie = 0;
 
 % [=================================================================]
 %  parse inputs
@@ -62,7 +62,7 @@ anim = 0; makemovie = 0;
 	p.addParameter('connectivity', 'euclidean')  % adjacency matrix
 	p.addParameter('clusterize', [0 0 0 0],@isvector)
 	p.addParameter('seed', 0)
-    p.addParameter('plasticity', [0 1 1], @isvector) % (1) - enabled?, (2) - epsilon, (3) - alpha
+    p.addParameter('plasticity', {0 1 1}, @iscell) % See implementation
 
 	p.parse(varargin{:});
 
@@ -263,13 +263,22 @@ for t = 2:simtime/dt
 
 	PP(:,t) = sin(mod(theta_t(:,t),2*pi));
 
-	if plasticity(1)
-        % Currently ignores spatial distance between oscillators, should
-        % it?
-         connectivity = connectivity + dt*plasticity(2)* ...
-        ( plasticity(3) * cos(phasedifferences) - connectivity );
-        adjacency{t} = connectivity;
-	end
+    switch plasticity{1}
+        case 'seliger' %{2} - epsilon, {3} - alpha
+            % Currently ignores spatial distance between oscillators, should
+            % it?
+            connectivity = connectivity + dt*plasticity{2}* ...
+                ( plasticity{3} * cos(phasedifferences) - connectivity );
+            
+        case 'STDP'
+            connectivity = connectivity + dt*plasticity{2}*((abs(phasedifferences)<=plasticity{3}).*phasedifferences - connectivity);
+        case 'null'
+        otherwise
+            disp('Running without a plasticity rule.')
+            plasticity{1} = 'null';
+    end
+    
+    adjacency{t} = connectivity;
 
 	% [=================================================================]
 	%  order parameter
@@ -345,7 +354,9 @@ if plotme
 	while anim
 		
 		for t = 2:simtime/dt
-			
+            if ~ishghandle(a(1))
+                break;
+            end
 			SS = reshape(PP(:,t),N,M);
 			axes(a(1)); 			cla
 			% imagesc(reshape(theta_t(:,t),N,M))
@@ -361,7 +372,11 @@ if plotme
 				MOV(t-1) = getframe(f);
 			end
 
-		end
+        end
+        
+        if ~ishghandle(a(1))
+            break;
+        end
 		anim = input(['repeat? ; 0 - no, 1 - yes \n'  ])
 	end
 
