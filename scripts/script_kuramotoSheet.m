@@ -1,11 +1,9 @@
 %% 0. Connectivity test
-checker = fliplr(checkerboard(50,1,1) > 0.5);
-%oscillators2 = (double(1:100<51)+10)*2*pi;
-oscillators2 = double(1:100<51)*pi;
 oscillators = ones(1,100)*10*2*pi;
+oscillators = [];
 
-plasticity = {'STDP' 1 pi};
-plasticity = {'seliger' 10 100};
+plasticity = {'STDP' 1 10*pi};
+%plasticity = {'seliger' 10 100};
 plasticity2 = {'STDP' 1 0.5};
 
 time = 1;
@@ -20,12 +18,12 @@ close all
 % find( (out1.oscillators > (oscmean+2.5*oscstd)) | (out1.oscillators < (oscmean-2.5*oscstd)))
 
 figure('Position', [350 300 1250 500])
-subplot(1,2,1)
+%subplot(1,2,1)
 imagesc(out1.connectivity)
 colorbar
-subplot(1,2,2)
-imagesc(out2.connectivity)
-colorbar
+%subplot(1,2,2)
+%imagesc(out2.connectivity)
+%colorbar
 
 %% 0.0 Timelapse Adjacency
 close all
@@ -51,16 +49,50 @@ end
 
 cgobj = clustergram(flipud(out1.connectivity), 'cluster', 'row');
 clusterlabels = cellfun(@str2num, cgobj.ColumnLabels);
-initial_condition = out1.phase(clusterlabels,1)
+clustered_state = out1.state(clusterlabels,:);
 
-out_cluster = kuramotoSheet([10 10],1,'plotme', 1,'init_cond', initial_condition, 'connectivity', 'all to all', 'oscillators',oscillators', 'time', time, 'dt', time/steps, 'plasticity', plasticity)
-%% 0.2 Rate of change
-d_adjacency = zeros(1,steps);
-for i=2:steps
-    d_adjacency(i) = sum(sum(abs(out2.adjacency{i}-out2.adjacency{i-1})));
-end
+%% 0.1.1 Replay data
+clear idx XX YY SS MOV PP
+    PP = clustered_state;
 
-%% 1 Temp adjacency matrix
+    f = figure(100);
+    makemovie = 0;
+    
+    idx = ones(1,N*M);
+    	
+	[XX, YY] = meshgrid([1:M],[1:N]);
+	XX = XX(:); YY = YY(:);
+	
+
+% 	if exist('linspecer')
+% 		LSpec = linspecer(length(unique(idx)))
+% 		set(a(1), 'colororder', LSpec);
+%     else
+% 		set(a(1), 'colororder', jet(length(unique(idx))));
+%     end
+		
+		for t = 2:size(PP,2)
+            if ~ishghandle(f)
+                break;
+            end
+			SS = reshape(PP(:,t),N,M);
+			cla
+			% imagesc(reshape(theta_t(:,t),N,M))
+			mesh(SS); hold on
+			scatter3(XX, YY ,PP(:,t),60,LSpec(idx,:),'filled')
+			title('phase')
+			caxis([0 2*pi])
+			zlim([-3 3])
+
+			drawnow
+			if makemovie
+                % TODO first frame of movie missing t=1???
+				MOV(t-1) = getframe(f);
+			end
+
+        end
+
+%% 2 Temp adjacency matrix
 figure
 N = 4; M = 4; radius = 1;
 [X Y] = meshgrid([1:N],[1:M]);
@@ -72,6 +104,6 @@ connectivity = squareform( pdist([X Y], 'euclidean') <= radius );
 imagesc(connectivity)
 disp('a')
         
-%% 2 Temp
+%% 3 Temp
 
 connectivity = fliplr(checkerboard(50,1,1) > 0.5);
