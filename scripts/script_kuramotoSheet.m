@@ -2,9 +2,9 @@
 oscillators = ones(1,100)*10*2*pi;
 oscillators = [];
 
-plasticity = {'STDP' 1 10*pi};
+plasticity = {'test' 1 10*pi};
 %plasticity = {'seliger' 10 100};
-plasticity2 = {'STDP' 1 0.5};
+plasticity2 = {'test' 1 0.5};
 
 time = 1;
 steps = 1000;
@@ -18,12 +18,12 @@ close all
 % find( (out1.oscillators > (oscmean+2.5*oscstd)) | (out1.oscillators < (oscmean-2.5*oscstd)))
 
 figure('Position', [350 300 1250 500])
-%subplot(1,2,1)
+subplot(1,2,1)
+imagesc(out1.adjacency{1})
+colorbar
+subplot(1,2,2)
 imagesc(out1.connectivity)
 colorbar
-%subplot(1,2,2)
-%imagesc(out2.connectivity)
-%colorbar
 
 %% 0.0 Timelapse Adjacency
 close all
@@ -107,3 +107,8 @@ disp('a')
 %% 3 Temp
 
 connectivity = fliplr(checkerboard(50,1,1) > 0.5);
+
+%%
+a = -1; b = -0.0001;
+
+sign(b)>sign(a)

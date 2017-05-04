@@ -249,6 +249,7 @@ end
 
 % temp
 adjacency{1} = connectivity;
+spikeTime = zeros(N*M,1); requiresUpdate = zeros(N*M);
 
 if plotme; f = figure(100); a(1) = subplot(121);a(2) = subplot(122); end
 for t = 2:simtime/dt
@@ -270,8 +271,38 @@ for t = 2:simtime/dt
             connectivity = connectivity + dt*plasticity{2}* ...
                 ( plasticity{3} * cos(phasedifferences) - connectivity );
             
-        case 'STDP'
+        case 'test'
             connectivity = connectivity + dt*plasticity{2}*((abs(phasedifferences)<=plasticity{3}).*phasedifferences - connectivity);
+        case 'STDP' % {2} - delta-adjustment: factor affecting weight change, {3} - [A1;A2], {4} - [tau1;tau2]
+            %%% Does not yet account for sign(0)=0, also does not account for bsxfun result deltaTime=0 (as 0 is used to ignore elements)
+            
+            % Determines upward zero crossover (= spike) of each oscillator
+            % and calculates time difference between all spikes
+            upwardZeroCross = sign(theta_t(:,t)) > sign(theta_t(:,t-1));
+            spikeTime(upwardZeroCross) = t; % Note: It should handle uninitialized values (as they are not present in upwardZeroCross)
+            deltaTime = bsxfun(@minus, spikeTime,spikeTime'); %deltaTime = t_i - t_j
+            
+            %TODO, check this again + write down what it should do
+            % Spiked oscillators are memorized and all updated oscillator
+            % couples are determined
+            requiresUpdate(:,upwardZeroCross) = 1;
+            updateMatrix = requiresUpdate.*requiresUpdate';
+            updateMatrix(logical(eye(N*M))) = 0;
+            requiresUpdate = requiresUpdate - updateMatrix;
+            %%% END TODO %%%
+            
+            % Actual implementation of Spike timing-dependent plasticity
+            % function, see http://www.scholarpedia.org/article/Spike-timing_dependent_plasticity#Basic_STDP_Model
+            deltaTime = deltaTime.*updateMatrix;
+            dTimePos = deltaTime > 0;
+            dTimeNeg = deltaTime < 0;
+            
+            W = plasticity{3}(1).*exp(- (deltaTime.*dTimePos)./plasticity{4}(1)) ...
+            -plasticity{3}(2).*exp( (deltaTime.*dTimeNeg)./plasticity{4}(2));
+            
+            % Update connectivity
+            connectivity = connectivity + plasticity{2}.*W;
+            
         case 'null'
         otherwise
             disp('Running without a plasticity rule.')
@@ -406,3 +437,14 @@ out.meanphase = MP;
 out.seed = seed;
  if makemovie && plotme ; out.movie = MOV; end
 % out.all =  sin(mod(theta_t,2*pi));
+end
+
+function W = STDP_fun(deltaT, A, tau)
+    if deltaT >= 0
+       W = A(1).*exp(-deltaT./tau(1));
+       return
+    else
+        W = -A(2).*exp(deltaT./tau(2));
+        return
+    end
+end
