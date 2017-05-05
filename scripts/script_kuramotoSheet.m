@@ -2,7 +2,7 @@
 oscillators = ones(1,100)*10*2*pi;
 oscillators = [];
 
-plasticity = {'test' 1 10*pi};
+plasticity = {'STDP' 1 [1 1] [60 60]}; %try different parameters STDP
 %plasticity = {'seliger' 10 100};
 plasticity2 = {'test' 1 0.5};
 
@@ -43,8 +43,6 @@ for i=1:steps
 end
 
 %% 0.1 HeatMap Cluster
-%Continue;
-
 %Improve, see log
 
 cgobj = clustergram(flipud(out1.connectivity), 'cluster', 'row');
@@ -53,6 +51,7 @@ clustered_state = out1.state(clusterlabels,:);
 
 %% 0.1.1 Replay data
 clear idx XX YY SS MOV PP
+N=10;M=10;
     PP = clustered_state;
 
     f = figure(100);
@@ -79,7 +78,7 @@ clear idx XX YY SS MOV PP
 			cla
 			% imagesc(reshape(theta_t(:,t),N,M))
 			mesh(SS); hold on
-			scatter3(XX, YY ,PP(:,t),60,LSpec(idx,:),'filled')
+			scatter3(XX, YY ,PP(:,t),60,'filled')
 			title('phase')
 			caxis([0 2*pi])
 			zlim([-3 3])

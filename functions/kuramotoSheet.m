@@ -271,25 +271,21 @@ for t = 2:simtime/dt
             connectivity = connectivity + dt*plasticity{2}* ...
                 ( plasticity{3} * cos(phasedifferences) - connectivity );
             
-        case 'test'
-            connectivity = connectivity + dt*plasticity{2}*((abs(phasedifferences)<=plasticity{3}).*phasedifferences - connectivity);
         case 'STDP' % {2} - delta-adjustment: factor affecting weight change, {3} - [A1;A2], {4} - [tau1;tau2]
             %%% Does not yet account for sign(0)=0, also does not account for bsxfun result deltaTime=0 (as 0 is used to ignore elements)
             
             % Determines upward zero crossover (= spike) of each oscillator
             % and calculates time difference between all spikes
-            upwardZeroCross = sign(theta_t(:,t)) > sign(theta_t(:,t-1));
-            spikeTime(upwardZeroCross) = t; % Note: It should handle uninitialized values (as they are not present in upwardZeroCross)
+            upwardZeroCross = sign(mod(theta_t(:,t),2*pi)-pi) > sign(mod(theta_t(:,t-1),2*pi)-pi);
+            spikeTime(upwardZeroCross) = t;
             deltaTime = bsxfun(@minus, spikeTime,spikeTime'); %deltaTime = t_i - t_j
             
-            %TODO, check this again + write down what it should do
             % Spiked oscillators are memorized and all updated oscillator
             % couples are determined
             requiresUpdate(:,upwardZeroCross) = 1;
             updateMatrix = requiresUpdate.*requiresUpdate';
             updateMatrix(logical(eye(N*M))) = 0;
             requiresUpdate = requiresUpdate - updateMatrix;
-            %%% END TODO %%%
             
             % Actual implementation of Spike timing-dependent plasticity
             % function, see http://www.scholarpedia.org/article/Spike-timing_dependent_plasticity#Basic_STDP_Model
@@ -297,11 +293,14 @@ for t = 2:simtime/dt
             dTimePos = deltaTime > 0;
             dTimeNeg = deltaTime < 0;
             
-            W = plasticity{3}(1).*exp(- (deltaTime.*dTimePos)./plasticity{4}(1)) ...
-            -plasticity{3}(2).*exp( (deltaTime.*dTimeNeg)./plasticity{4}(2));
-            
+            W = dTimePos.*plasticity{3}(1).*exp(- deltaTime./plasticity{4}(1)) ...
+                -dTimeNeg.*plasticity{3}(2).*exp( deltaTime./plasticity{4}(2));
+
             % Update connectivity
             connectivity = connectivity + plasticity{2}.*W;
+            
+            case 'test'
+                connectivity = connectivity + dt*plasticity{2}*((abs(phasedifferences)<=plasticity{3}).*phasedifferences - connectivity);
             
         case 'null'
         otherwise
