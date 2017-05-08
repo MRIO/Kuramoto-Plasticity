@@ -63,6 +63,10 @@ anim = 1; makemovie = 0;
 	p.addParameter('clusterize', [0 0 0 0],@isvector)
 	p.addParameter('seed', 0)
     p.addParameter('plasticity', {0 1 1}, @iscell) % See implementation
+    
+    %%% Needs testing
+    p.addParameter('training',[0 10*2*pi]) %(1) - Training amplitude, (2) - training frequency
+    p.addParameter('training_signal',[]) % Training Phases
 
 	p.parse(varargin{:});
 
@@ -81,6 +85,8 @@ anim = 1; makemovie = 0;
 	init_cond = p.Results.init_cond;
 	oscillators = p.Results.oscillators;
     plasticity = p.Results.plasticity;
+    training = p.Results.training;
+    training_signal = p.Results.training_signal;
 
 	N = netsize(1);
 	M = netsize(2);
@@ -186,6 +192,14 @@ end
 % ensure that there are no self connections
 connectivity(find(eye(M*N))) = 0;
 
+% [=================================================================]
+%  Training/Input
+% [=================================================================]
+
+if ~isvector(training_signal)
+    training_signal = zeros(N*M,1);
+end
+
 
 % [=================================================================]
 %  Scale coupling parameter?
@@ -260,7 +274,8 @@ for t = 2:simtime/dt
 	
 	summed_sin_diffs = mean(phasedifferences_W,2); %ignore self?
 
-	theta_t(:,t) = theta_t(:,t-1) + dt*( omega_i + summed_sin_diffs  ) + ou_noise(:,t);
+    %%% Training requires testing
+	theta_t(:,t) = theta_t(:,t-1) + dt*( omega_i + summed_sin_diffs + training(1)*sin(theta_t(:,t-1)-training(2)*dt*t-training_signal(:,1)) ) + ou_noise(:,t);
 
 	PP(:,t) = sin(mod(theta_t(:,t),2*pi));
 

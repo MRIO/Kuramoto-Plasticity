@@ -25,6 +25,37 @@ subplot(1,2,2)
 imagesc(out1.connectivity)
 colorbar
 
+%% -
+N=10;M=10;
+oscillators = rand(N*M,1)*2*pi*10;
+% oscillators{2} = ones(N*M,1)*2*pi*10;
+% oscillators{3} = (reshape(fliplr(checkerboard(5,1,1) > 0.5),100,1)*10+5)*2*pi;
+% oscillators{4} = zeros(100,1);
+% oscillators{4}(51:end,1)=5*2*pi;
+% oscillators{4}=oscillators{4}+10*2*pi;
+
+
+init_cond{1} = rand(N*M,1)*2*pi;
+init_cond{2} = zeros(N*M,1);
+init_cond{3} = (reshape(fliplr(checkerboard(5,1,1) > 0.5),100,1))*pi+pi/2;
+init_cond{4} = zeros(N*M,1);
+init_cond{4}(51:end,1)=pi;
+init_cond{4} = init_cond{4}+pi/2;
+
+connectivity = zeros(N*M);
+
+plasticity = {'seliger' 10 100};
+
+for i=1:4
+    out(i) = kuramotoSheet([N M],1,'plotme',0,'connectivity', connectivity,'oscillators',oscillators,'init_cond',init_cond{i},'plasticity',plasticity);
+end
+
+figure
+for i=1:4
+    subplot(2,2,i)
+    imagesc(out(i).connectivity);
+    colorbar
+end
 %% 0.0 Timelapse Adjacency
 close all
 f = figure
@@ -52,7 +83,8 @@ clustered_state = out1.state(clusterlabels,:);
 %% 0.1.1 Replay data
 clear idx XX YY SS MOV PP
 N=10;M=10;
-    PP = clustered_state;
+    %PP = clustered_state;
+    PP = out(2).state;
 
     f = figure(100);
     makemovie = 0;
@@ -105,7 +137,8 @@ disp('a')
         
 %% 3 Temp
 
-connectivity = fliplr(checkerboard(50,1,1) > 0.5);
+connectivity = fliplr(checkerboard(5,1,1) > 0.5);
+imagesc(connectivity);
 
 %%
 a = -1; b = -0.0001;
