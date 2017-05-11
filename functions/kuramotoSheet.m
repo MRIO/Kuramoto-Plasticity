@@ -67,6 +67,7 @@ anim = 1; makemovie = 0;
     %%% Needs testing
     p.addParameter('training',[0 10*2*pi]) %(1) - Training amplitude, (2) - training frequency
     p.addParameter('training_signal',[]) % Training Phases
+    p.addParameter('training_time',0.25) % in seconds
 
 	p.parse(varargin{:});
 
@@ -87,6 +88,7 @@ anim = 1; makemovie = 0;
     plasticity = p.Results.plasticity;
     training = p.Results.training;
     training_signal = p.Results.training_signal;
+    training_time = p.Results.training_time;
 
 	N = netsize(1);
 	M = netsize(2);
@@ -275,7 +277,8 @@ for t = 2:simtime/dt
 	summed_sin_diffs = mean(phasedifferences_W,2); %ignore self?
 
     %%% Training requires testing
-	theta_t(:,t) = theta_t(:,t-1) + dt*( omega_i + summed_sin_diffs + training(1)*sin(theta_t(:,t-1)-training(2)*dt*t-training_signal(:,1)) ) + ou_noise(:,t);
+	theta_t(:,t) = theta_t(:,t-1) + dt*( omega_i + summed_sin_diffs + (t*dt<training_time)*training(1)*sin(theta_t(:,t-1)-training(2)*dt*t-training_signal(:,1)) ) + ou_noise(:,t);
+    
 
 	PP(:,t) = sin(mod(theta_t(:,t),2*pi));
 

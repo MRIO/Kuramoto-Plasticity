@@ -25,9 +25,9 @@ subplot(1,2,2)
 imagesc(out1.connectivity)
 colorbar
 
-%% -
+%% - Initial Conditions test
 N=10;M=10;
-oscillators = rand(N*M,1)*2*pi*10;
+oscillators = rand(N*M,1)*2*pi*10; %use default, oscillators = [];
 % oscillators{2} = ones(N*M,1)*2*pi*10;
 % oscillators{3} = (reshape(fliplr(checkerboard(5,1,1) > 0.5),100,1)*10+5)*2*pi;
 % oscillators{4} = zeros(100,1);
@@ -56,6 +56,47 @@ for i=1:4
     imagesc(out(i).connectivity);
     colorbar
 end
+
+%% - Training Test
+N=10;M=10;
+time = 1;
+
+%oscillators = 7*2*pi;
+
+oscillators = [];
+omega_mean = 7; omega_std = 2;
+init_cond = rand(N*M,1)*2*pi;
+connectivity = zeros(N*M);
+
+plasticity = {'seliger' 10 100};
+
+training = [100 7*2*pi];
+training_time = 0.5;
+
+% Signal %
+training_signal = zeros(10);
+switch 1
+    case 1
+training_signal(:,1:3)=pi;
+training_signal(:,7:10)=4*pi/3;
+    case 2
+training_signal(6:10,1:5)=pi/2;
+training_signal(1:5,6:10)=pi;
+training_signal(6:10,6:10)=3*pi/2;
+    case 3
+        training_signal = fliplr(checkerboard(5,1,1) > 0.5)*pi;
+end
+training_signal = reshape(training_signal,100,1);
+%%%%%%%%%%
+
+out = kuramotoSheet([N M],1,'plotme',0,'time',time,'connectivity', connectivity,'oscillators',oscillators,'omega_mean',omega_mean,'omega_std',omega_std,'init_cond',init_cond,'plasticity',plasticity,'training', training, 'training_signal', training_signal,'training_time', training_time);
+%out1 = kuramotoSheet([N M],1,'plotme',0,'connectivity', connectivity,'oscillators',oscillators,'init_cond',init_cond,'plasticity',plasticity);
+
+figure
+imagesc(out.connectivity);
+colorbar
+
+
 %% 0.0 Timelapse Adjacency
 close all
 f = figure
@@ -74,17 +115,17 @@ for i=1:steps
 end
 
 %% 0.1 HeatMap Cluster
-%Improve, see log
+%Improve?
 
-cgobj = clustergram(flipud(out1.connectivity), 'cluster', 'row');
+cgobj = clustergram(flipud(out.connectivity), 'cluster', 'row');
 clusterlabels = cellfun(@str2num, cgobj.ColumnLabels);
-clustered_state = out1.state(clusterlabels,:);
+clustered_state = out.state(clusterlabels,:);
 
 %% 0.1.1 Replay data
 clear idx XX YY SS MOV PP
 N=10;M=10;
     %PP = clustered_state;
-    PP = out(2).state;
+    PP = out.state;
 
     f = figure(100);
     makemovie = 0;
