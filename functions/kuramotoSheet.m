@@ -38,7 +38,7 @@ function out = kuramotoSheet(varargin)
  % author: m@negrello.org
  % all rights to kuramoto and mathworks, all wrongs are mine ;D
 
-gpu = 0;
+%gpu = 0;
 
 anim = 1; makemovie = 0;
 
@@ -68,6 +68,8 @@ anim = 1; makemovie = 0;
     p.addParameter('training',[0 10*2*pi]) %(1) - Training amplitude, (2) - training frequency
     p.addParameter('training_signal',[]) % Training Phases
     p.addParameter('training_time',0.25) % in seconds
+    p.addParameter('sigmoid',[0 5]); % [1.25 5] gives range between 0 and 10
+    p.addParameter('init_scaling', 10); %Scales the initial connectivity, different from 'scaling' which only affects the connectivity after sigmoid has been applied.
 
 	p.parse(varargin{:});
 
@@ -89,6 +91,8 @@ anim = 1; makemovie = 0;
     training = p.Results.training;
     training_signal = p.Results.training_signal;
     training_time = p.Results.training_time;
+    sigmoid = p.Results.sigmoid;
+    init_scaling = p.Results.init_scaling;
 
 	N = netsize(1);
 	M = netsize(2);
@@ -155,6 +159,8 @@ switch connectivity
 end
 end
 
+connectivity = connectivity.*init_scaling;
+
 
 % [=================================================================]
 %  this
@@ -192,7 +198,7 @@ end
 
 
 % ensure that there are no self connections
-connectivity(find(eye(M*N))) = 0;
+connectivity(logical(eye(M*N))) = 0;
 
 % [=================================================================]
 %  Training/Input
@@ -211,11 +217,11 @@ end
 
 % Do not use scaling combined with plasticity? Or incorporate it
 % in the plasticity function?
-if scale_to_intrinsic_freq
-	connectivity = bsxfun(@times, omega_i, connectivity) * scaling / NO;
-else
-	connectivity = scaling*connectivity;
-end
+% if scale_to_intrinsic_freq
+% 	connectivity = bsxfun(@times, omega_i, connectivity) * scaling / NO;
+% else
+% 	connectivity = scaling*connectivity;
+% end
 
 
 % [=================================================================]
@@ -252,19 +258,20 @@ end
 k = zeros(1,simtime*(1/dt)); 
 MP = zeros(simtime*(1/dt));
 
-if gpu
-	theta_t = gpuArray(theta_t);
-	connectivity = gpuArray(connectivity);
-	ou_noise = gpuArray(ou_noise);
-	k = gpuArray(k);
-end
+% if gpu
+% 	theta_t = gpuArray(theta_t);
+% 	connectivity = gpuArray(connectivity);
+% 	ou_noise = gpuArray(ou_noise);
+% 	k = gpuArray(k);
+% end
 
 % [=================================================================]
 %  simulate
 % [=================================================================]
 
-% temp
-adjacency{1} = connectivity;
+
+sConnectivity = sigmoidConnectivity(connectivity, sigmoid(1), sigmoid(2), scaling);
+adjacency{1} = sConnectivity;
 spikeTime = zeros(N*M,1); requiresUpdate = zeros(N*M);
 
 if plotme; f = figure(100); a(1) = subplot(121);a(2) = subplot(122); end
@@ -272,7 +279,7 @@ for t = 2:simtime/dt
 
 	phasedifferences = bsxfun(@minus, theta_t(:,t-1)',theta_t(:,t-1));
 
-	phasedifferences_W = connectivity.*sin(phasedifferences);
+	phasedifferences_W = sConnectivity.*sin(phasedifferences);
 	
 	summed_sin_diffs = mean(phasedifferences_W,2); %ignore self?
 
@@ -295,7 +302,7 @@ for t = 2:simtime/dt
             % Determines upward zero crossover (= spike) of each oscillator
             % and calculates time difference between all spikes
             upwardZeroCross = sign(mod(theta_t(:,t),2*pi)-pi) > sign(mod(theta_t(:,t-1),2*pi)-pi);
-            spikeTime(upwardZeroCross) = t;
+            spikeTime(upwardZeroCross) = t.*dt;
             deltaTime = bsxfun(@minus, spikeTime,spikeTime'); %deltaTime = t_i - t_j
             
             % Spiked oscillators are memorized and all updated oscillator
@@ -326,8 +333,9 @@ for t = 2:simtime/dt
             plasticity{1} = 'null';
     end
     
-    adjacency{t} = connectivity;
-
+    
+    sConnectivity = sigmoidConnectivity(connectivity,sigmoid(1),sigmoid(2), scaling);
+    adjacency{t} = sConnectivity;
 	% [=================================================================]
 	%  order parameter
 	% [=================================================================]
@@ -436,12 +444,12 @@ end
 % [================================================]
 
 
-if gpu
-	theta_t = gather(theta_t);
-	connectivity = gather(connectivity);
-	ou_noise = gather(ou_noise);
-	k = gather(k);
-end
+% if gpu
+% 	theta_t = gather(theta_t);
+% 	connectivity = gather(connectivity);
+% 	ou_noise = gather(ou_noise);
+% 	k = gather(k);
+% end
 
 out.state = PP;
 out.phase = theta_t;
@@ -454,6 +462,16 @@ out.meanphase = MP;
 out.seed = seed;
  if makemovie && plotme ; out.movie = MOV; end
 % out.all =  sin(mod(theta_t,2*pi));
+end
+
+function W = sigmoidConnectivity(connectivity, a, c, scaling)
+    if a==0
+        W=connectivity.*scaling;
+    else
+        W = sigmf(connectivity, [a c]).*scaling;
+    end
+    
+    W(connectivity<0)=0;
 end
 
 function W = STDP_fun(deltaT, A, tau)
