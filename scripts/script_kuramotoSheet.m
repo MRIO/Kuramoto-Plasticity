@@ -1,20 +1,27 @@
 %% 0. Connectivity test
 %oscillators = ones(100,1)*10*2*pi;
 oscillators = [];
-oscillators = (randn(100,1)*1+7)*2*pi;
+oscillators = (randn(4,1)*1+7)*2*pi;
 
-plasticity = {'STDP' 1 [1 0] [1 1]}; %try different parameters STDP
-plasticity2 = {'STDP' 1 [1 0] [10 10]}; %try different parameters STDP
+plasticity = {'STDP' 0.1 [1 -1] [20 20]}; %try different parameters STDP
+plasticity2 = {'STDP' 0.1 [1 -1] [20 20]}; %try different parameters STDP
 %plasticity = {'seliger' 10 100};
 
-sigmoid = [1.25 5];
-sigmoid2 = [1.25 5];
-init_scaling = 0;
+% scaling 10
+%sigmoid = [1.25 5];
+%sigmoid2 = [1.25 5];
 
-time = 10;
+% scaling 1
+sigmoid = [10 0.5];
+sigmoid2 = [10 0.5];
+init_scaling = 0;
+decay = 0.1;
+decay2 = 0;
+
+time = 1;
 steps = 1000;
-out1 = kuramotoSheet([10 10],10,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling);
-out2 = kuramotoSheet([10 10],10,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling);
+out1 = kuramotoSheet([2 2],1,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay);
+out2 = kuramotoSheet([2 2],1,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2);
 
 close all
 
@@ -150,6 +157,61 @@ figure(100)
 imagesc(out1.adjacency{end})
 colorbar
 
+%% - Training STDP decay test
+oscillators = ones(100,1)*10*2*pi;
+%oscillators = [];
+%oscillators = (randn(100,1)*1+7)*2*pi;
+
+plasticity = {'STDP' 1 [1 -1] [0.01 0.01]}; %try different parameters STDP
+plasticity2 = {'STDP' 2 [1 -1] [0.01 0.01]}; %try different parameters STDP
+
+sigmoid = [10 0.5];
+sigmoid2 = [10 0.5];
+init_scaling = 0;
+decay = 0.5;
+decay2 = 0.5;
+
+training = [100 7*2*pi];
+training_time = 0.5;
+
+% Signal %
+training_signal = zeros(10);
+switch 1
+    case 1 % 3cluster
+training_signal(:,1:3)=2/3*pi;
+training_signal(:,7:10)=4/3*pi;
+    case 2
+training_signal(6:10,1:5)=pi/2;
+training_signal(1:5,6:10)=pi;
+training_signal(6:10,6:10)=3*pi/2;
+    case 3
+        training_signal = fliplr(checkerboard(5,1,1) > 0.5)*pi;
+    case 4
+        training_signal(:,1:5) = pi;
+end
+training_signal = reshape(training_signal,100,1);
+%%%%%%%%%%
+
+
+time = 10;
+steps = 10000;
+out1 = kuramotoSheet([10 10],1,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time);
+out2 = kuramotoSheet([10 10],1,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time);
+
+close all
+
+% oscmean = mean(out1.oscillators);
+% oscstd = std(out1.oscillators);
+% find( (out1.oscillators > (oscmean+2.5*oscstd)) | (out1.oscillators < (oscmean-2.5*oscstd)))
+
+figure('Position', [350 300 1250 500])
+subplot(1,2,1)
+imagesc(out1.adjacency{end})
+colorbar
+subplot(1,2,2)
+imagesc(out2.adjacency{end})
+colorbar
+
 
 %% 0.0 Timelapse Adjacency
 close all
@@ -179,6 +241,7 @@ clustered_state = out.state(clusterlabels,:);
 clear idx XX YY SS MOV PP
 N=10;M=10;
     PP = out1.state;
+    %PP = result.state;
     %PP = clustered_state;
 
     f = figure(100);
@@ -271,6 +334,9 @@ toc
 
 results{1} = results_parameters;
 results{2} = results_adjacency;
+
+%% Remove Unnecessary data from result
+result = rmfield(out1,{'adjacency';'orderparameter';'phase';'meanphase'})
 
 %% Plot parameter test
 close all

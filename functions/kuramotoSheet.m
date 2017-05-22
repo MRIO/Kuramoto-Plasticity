@@ -70,6 +70,7 @@ anim = 1; makemovie = 0;
     p.addParameter('training_time',0.25) % in seconds
     p.addParameter('sigmoid',[0 5]); % [1.25 5] gives range between 0 and 10
     p.addParameter('init_scaling', 10); %Scales the initial connectivity, different from 'scaling' which only affects the connectivity after sigmoid has been applied.
+    p.addParameter('decay',0) % decay/second
 
 	p.parse(varargin{:});
 
@@ -93,6 +94,7 @@ anim = 1; makemovie = 0;
     training_time = p.Results.training_time;
     sigmoid = p.Results.sigmoid;
     init_scaling = p.Results.init_scaling;
+    decay = p.Results.decay;
 
 	N = netsize(1);
 	M = netsize(2);
@@ -288,7 +290,7 @@ for t = 2:simtime/dt
     
 
 	PP(:,t) = sin(mod(theta_t(:,t),2*pi));
-
+    
     switch plasticity{1}
         case 'seliger' %{2} - epsilon, {3} - alpha
             % Currently ignores spatial distance between oscillators, should
@@ -333,7 +335,8 @@ for t = 2:simtime/dt
             plasticity{1} = 'null';
     end
     
-    
+    connectivity = connectivity - decay.*dt;
+    connectivity(connectivity<0)=0;
     sConnectivity = sigmoidConnectivity(connectivity,sigmoid(1),sigmoid(2), scaling);
     adjacency{t} = sConnectivity;
 	% [=================================================================]
@@ -471,7 +474,8 @@ function W = sigmoidConnectivity(connectivity, a, c, scaling)
         W = sigmf(connectivity, [a c]).*scaling;
     end
     
-    W(connectivity<0)=0;
+%    W(connectivity<0)=0; % lower bound (actual) connectivity before this function
+%    instead.
 end
 
 function W = STDP_fun(deltaT, A, tau)
