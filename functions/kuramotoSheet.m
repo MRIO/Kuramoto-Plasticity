@@ -272,7 +272,7 @@ MP = zeros(simtime*(1/dt));
 % [=================================================================]
 
 
-sConnectivity = sigmoidConnectivity(connectivity, sigmoid(1), sigmoid(2), scaling);
+sConnectivity = sigmoidConnectivity(connectivity, sigmoid(1), sigmoid(2));
 adjacency{1} = sConnectivity;
 spikeTime = zeros(N*M,1); requiresUpdate = zeros(N*M);
 
@@ -281,7 +281,7 @@ for t = 2:simtime/dt
 
 	phasedifferences = bsxfun(@minus, theta_t(:,t-1)',theta_t(:,t-1));
 
-	phasedifferences_W = sConnectivity.*sin(phasedifferences);
+	phasedifferences_W = sConnectivity.*scaling.*sin(phasedifferences);
 	
 	summed_sin_diffs = mean(phasedifferences_W,2); %ignore self?
 
@@ -337,7 +337,7 @@ for t = 2:simtime/dt
     
     connectivity = connectivity - decay.*dt;
     connectivity(connectivity<0)=0;
-    sConnectivity = sigmoidConnectivity(connectivity,sigmoid(1),sigmoid(2), scaling);
+    sConnectivity = sigmoidConnectivity(connectivity,sigmoid(1),sigmoid(2));
     adjacency{t} = sConnectivity;
 	% [=================================================================]
 	%  order parameter
@@ -467,11 +467,11 @@ out.seed = seed;
 % out.all =  sin(mod(theta_t,2*pi));
 end
 
-function W = sigmoidConnectivity(connectivity, a, c, scaling)
+function W = sigmoidConnectivity(connectivity, a, c)
     if a==0
-        W=connectivity.*scaling;
+        W=connectivity;
     else
-        W = sigmf(connectivity, [a c]).*scaling;
+        W = sigmf(connectivity, [a c]);
     end
     
 %    W(connectivity<0)=0; % lower bound (actual) connectivity before this function
