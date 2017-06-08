@@ -115,9 +115,6 @@ end
 
 scale_to_intrinsic_freq = 0;
 
-
-
-
 % [=================================================================]
 %  connectivity
 % [=================================================================]
@@ -271,7 +268,6 @@ MP = zeros(simtime*(1/dt));
 %  simulate
 % [=================================================================]
 
-
 sConnectivity = sigmoidConnectivity(connectivity, sigmoid(1), sigmoid(2));
 adjacency{1} = sConnectivity;
 spikeTime = zeros(N*M,1); requiresUpdate = zeros(N*M);
@@ -305,6 +301,7 @@ for t = 2:simtime/dt
             % and calculates time difference between all spikes
             upwardZeroCross = sign(mod(theta_t(:,t),2*pi)-pi) > sign(mod(theta_t(:,t-1),2*pi)-pi);
             spikeTime(upwardZeroCross) = t.*dt;
+            
             deltaTime = bsxfun(@minus, spikeTime,spikeTime'); %deltaTime = t_i - t_j
             
             % Spiked oscillators are memorized and all updated oscillator
