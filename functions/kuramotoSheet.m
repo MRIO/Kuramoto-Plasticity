@@ -474,13 +474,3 @@ function W = sigmoidConnectivity(connectivity, a, c)
 %    W(connectivity<0)=0; % lower bound (actual) connectivity before this function
 %    instead.
 end
-
-function W = STDP_fun(deltaT, A, tau)
-    if deltaT >= 0
-       W = A(1).*exp(-deltaT./tau(1));
-       return
-    else
-        W = -A(2).*exp(deltaT./tau(2));
-        return
-    end
-end

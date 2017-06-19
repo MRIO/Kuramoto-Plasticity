@@ -169,16 +169,16 @@ scaling2 = 4*pi;
 
 % scaling 4*pi, tau 002 latest optimal values for 3cluster 0625
 
-plasticity = {'STDP' 1 [1 -1] [0.002 0.002]}; %try different parameters STDP
-plasticity2 = {'STDP' 1 [1 -1] [0.002 0.002]}; %try different parameters STDP
+plasticity = {'STDP' 1 [1 1] [0.002 0.002]}; %try different parameters STDP
+plasticity2 = {'STDP' 1 [1 0] [0.002 0.002]}; %try different parameters STDP
 
 sigmoid = [10 0.5];
 sigmoid2 = [10 0.5];
 init_scaling = 0;
-decay = 0.5;
-decay2 = 0.5;
+decay = 0;
+decay2 = 0;
 
-training = [100 10*2*pi];
+training = [0 10*2*pi];
 training_time = 0.5;
 
 % Signal %
@@ -195,6 +195,7 @@ training_signal(6:10,6:10)=3*pi/2;
         training_signal = fliplr(checkerboard(5,1,1) > 0.5)*pi;
     case 4 % 2cluster
         training_signal(:,1:5) = pi;
+        
 end
 training_signal = reshape(training_signal,100,1);
 %%%%%%%%%%
@@ -247,8 +248,11 @@ clustered_state = out.state(clusterlabels,:);
 %% 0.1.1 Replay data
 clear idx XX YY SS MOV PP
 N=10;M=10;
-    PP = out1.state(:,9001:end);
-    %PP = out1.state;
+    %PP = out1.state(:,9001:end);
+    %PP = test_STDP_Random05_training{2}.state;
+    %PP = test_STDP_Random05_4cluster{3}.state;
+    
+    PP = out2.state(:,9001:end);
     %PP = result.state;
     %PP = clustered_state;
 
@@ -300,16 +304,38 @@ connectivity = squareform( pdist([X Y], 'euclidean') <= radius );
 
 imagesc(connectivity)
 disp('a')
-        
-%% 3 Temp
 
-connectivity = fliplr(checkerboard(5,1,1) > 0.5);
-imagesc(connectivity);
+%% STDP Function plots
+% Sigmoid
+clear
+close all
+figure
+a = 10;
+c = 0.5;
+t = linspace(-1,2,1000);
 
-%%
-a = -1; b = -0.0001;
+y = sigmf(t, [a c]);
 
-sign(b)>sign(a)
+plot(t,y)
+xlabel('Original connectivity')
+ylabel('Adjusted connectivity')
+title('Sigmoid Connectivity Adjustment')
+
+% STDP function
+figure
+dTimePos = 1;
+dTimeNeg = 1;
+A = [1 1];
+tau = [0.002 0.002];
+t = linspace(-0.02,0.02,1000);
+ts = t>0;
+
+y = ts.*A(1).*exp(- t./tau(1)) -~ts.*A(2).*exp( t./tau(2));
+
+plot(t,y)
+xlabel('Time between spikes (s)')
+ylabel('Weight change')
+title('STDP Weight Change Function')
 
 %% Generate parameter test
 %return
