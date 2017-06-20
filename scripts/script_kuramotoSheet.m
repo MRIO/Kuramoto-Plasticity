@@ -220,6 +220,57 @@ subplot(1,2,2)
 imagesc(out2.adjacency{end})
 colorbar
 
+%% STDP June 20+
+sigmoid = [10 0.5];
+sigmoid2 = [10 0.5];
+% No decay? Maybe for STDP [1 0]
+decay = 0.5; 
+decay2 = 0; 
+
+% No training
+training = [0 10*2*pi];
+training_time = 0.5;
+training_signal = [];
+
+init_scaling = 0; % Initial connectivity used in these tests
+
+% Change distribution (uniform? bi/multi-modal gaussian? See notes), see
+% effect on cluster formation
+oscillators = (randn(100,1)*0.05+10)*2*pi;
+
+connectivity = 'euclidean';
+radius = 3;
+
+% scaling 4*pi, tau 002 latest optimal values for 3cluster 0625
+scaling = 4*pi;
+scaling2 = 4*pi;
+
+% Try varying STDP functions/parameters and effect on clusters
+plasticity = {'STDP' 1 [1 0] [0.002 0.002]};
+plasticity2 = {'STDP' 1 [1 1] [0.002 0.002]};
+
+time = 10;
+steps = 10000;
+out1 = kuramotoSheet([10 10],scaling,'plotme', 0,'connectivity', connectivity, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time);
+out2 = kuramotoSheet([10 10],scaling2,'plotme', 0,'connectivity', connectivity, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time);
+
+close all
+
+% oscmean = mean(out1.oscillators);
+% oscstd = std(out1.oscillators);
+% find( (out1.oscillators > (oscmean+2.5*oscstd)) | (out1.oscillators < (oscmean-2.5*oscstd)))
+
+if 1
+figure('Position', [50 100 1250 500])
+else
+figure('Position', [350 300 1250 500])
+end
+subplot(1,2,1)
+imagesc(out1.adjacency{end})
+colorbar
+subplot(1,2,2)
+imagesc(out2.adjacency{end})
+colorbar
 
 %% 0.0 Timelapse Adjacency
 close all
