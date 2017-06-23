@@ -90,12 +90,12 @@ training_time = 0.5;
 training_signal = zeros(10);
 switch 4
     case 1
-training_signal(:,1:3)=pi;
-training_signal(:,7:10)=4*pi/3;
+        training_signal(:,1:3)=pi;
+        training_signal(:,7:10)=4*pi/3;
     case 2
-training_signal(6:10,1:5)=pi/2;
-training_signal(1:5,6:10)=pi;
-training_signal(6:10,6:10)=3*pi/2;
+        training_signal(6:10,1:5)=pi/2;
+        training_signal(1:5,6:10)=pi;
+        training_signal(6:10,6:10)=3*pi/2;
     case 3
         training_signal = fliplr(checkerboard(5,1,1) > 0.5)*pi;
     case 4
@@ -131,12 +131,12 @@ training_time = 0.5;
 training_signal = zeros(10);
 switch 1
     case 1
-training_signal(:,1:3)=pi;
-training_signal(:,7:10)=4*pi/3;
+        training_signal(:,1:3)=pi;
+        training_signal(:,7:10)=4*pi/3;
     case 2
-training_signal(6:10,1:5)=pi/2;
-training_signal(1:5,6:10)=pi;
-training_signal(6:10,6:10)=3*pi/2;
+        training_signal(6:10,1:5)=pi/2;
+        training_signal(1:5,6:10)=pi;
+        training_signal(6:10,6:10)=3*pi/2;
     case 3
         training_signal = fliplr(checkerboard(5,1,1) > 0.5)*pi;
     case 4
@@ -169,8 +169,8 @@ scaling2 = 4*pi;
 
 % scaling 4*pi, tau 002 latest optimal values for 3cluster 0625
 
-plasticity = {'STDP' 1 [1 1] [0.002 0.002]}; %try different parameters STDP
-plasticity2 = {'STDP' 1 [1 0] [0.002 0.002]}; %try different parameters STDP
+plasticity = {'STDP' 0.1 [1 1] [0.002 0.002]}; %try different parameters STDP
+plasticity2 = {'STDP' 0.1 [1 0] [0.002 0.002]}; %try different parameters STDP
 
 sigmoid = [10 0.5];
 sigmoid2 = [10 0.5];
@@ -185,12 +185,12 @@ training_time = 0.5;
 training_signal = zeros(10);
 switch 2
     case 1 % 3cluster
-training_signal(:,1:3)=2/3*pi;
-training_signal(:,7:10)=4/3*pi;
+        training_signal(:,1:3)=2/3*pi;
+        training_signal(:,7:10)=4/3*pi;
     case 2 % 4cluster
-training_signal(6:10,1:5)=pi/2;
-training_signal(1:5,6:10)=pi;
-training_signal(6:10,6:10)=3*pi/2;
+        training_signal(6:10,1:5)=pi/2;
+        training_signal(1:5,6:10)=pi;
+        training_signal(6:10,6:10)=3*pi/2;
     case 3
         training_signal = fliplr(checkerboard(5,1,1) > 0.5)*pi;
     case 4 % 2cluster
@@ -221,22 +221,38 @@ imagesc(out2.adjacency{end})
 colorbar
 
 %% STDP June 20+
+%parameters to vary: scaling, oscillators (distribution parametrize),
+%connectivity, radius, plasticity
+
 sigmoid = [10 0.5];
 sigmoid2 = [10 0.5];
 % No decay? Maybe for STDP [1 0]
-decay = 0.5; 
-decay2 = 0; 
+decay = 0;
+decay2 = 0;
 
 % No training
 training = [0 10*2*pi];
 training_time = 0.5;
 training_signal = [];
 
-init_scaling = 0; % Initial connectivity used in these tests
+init_scaling = 1; % Initial connectivity used in these tests
 
 % Change distribution (uniform? bi/multi-modal gaussian? See notes), see
 % effect on cluster formation
-oscillators = (randn(100,1)*0.05+10)*2*pi;
+
+switch 'uniform'
+    case 'normal'
+        oscillators = (randn(100,1)*0.05+10);
+    case 'uniform'
+        interval = [5 15];
+        oscillators = interval(1) + (interval(2)-interval(1)).*rand(100,1);
+    case 'multimodal normal'
+        %%% create multimodal
+        %mu = [7.5 10 12.5];
+        %sigma = 0.05;
+        %oscillators = normpdf(
+end
+oscillators = oscillators*2*pi;
 
 connectivity = 'euclidean';
 radius = 3;
@@ -245,25 +261,23 @@ radius = 3;
 scaling = 4*pi;
 scaling2 = 4*pi;
 
+stepval = 0.501;
+
 % Try varying STDP functions/parameters and effect on clusters
-plasticity = {'STDP' 1 [1 0] [0.002 0.002]};
-plasticity2 = {'STDP' 1 [1 1] [0.002 0.002]};
+plasticity = {'STDP' 0.2 [1 1] [0.002 0.002]};
+plasticity2 = {'STDP' 0.2 [1 1] [0.002 0.002]};
 
 time = 10;
 steps = 10000;
-out1 = kuramotoSheet([10 10],scaling,'plotme', 0,'connectivity', connectivity, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time);
-out2 = kuramotoSheet([10 10],scaling2,'plotme', 0,'connectivity', connectivity, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time);
+out1 = kuramotoSheet([10 10],scaling,'plotme', 0,'connectivity', connectivity, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
+out2 = kuramotoSheet([10 10],scaling2,'plotme', 0,'connectivity', 'all to all', 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
 
 close all
 
-% oscmean = mean(out1.oscillators);
-% oscstd = std(out1.oscillators);
-% find( (out1.oscillators > (oscmean+2.5*oscstd)) | (out1.oscillators < (oscmean-2.5*oscstd)))
-
-if 1
-figure('Position', [50 100 1250 500])
+if 0
+    figure('Position', [50 100 1250 500])
 else
-figure('Position', [350 300 1250 500])
+    figure('Position', [350 300 1250 500])
 end
 subplot(1,2,1)
 imagesc(out1.adjacency{end})
@@ -299,22 +313,22 @@ clustered_state = out.state(clusterlabels,:);
 %% 0.1.1 Replay data
 clear idx XX YY SS MOV PP
 N=10;M=10;
-    %PP = out1.state(:,9001:end);
-    %PP = test_STDP_Random05_training{2}.state;
-    %PP = test_STDP_Random05_4cluster{3}.state;
-    
-    PP = out2.state(:,9001:end);
-    %PP = result.state;
-    %PP = clustered_state;
+%PP = out1.state(:,9001:end);
+%PP = test_STDP_Random05_training{2}.state;
+%PP = test_STDP_Random05_4cluster{3}.state;
 
-    f = figure(100);
-    makemovie = 0;
-    
-    idx = ones(1,N*M);
-    	
-	[XX, YY] = meshgrid([1:M],[1:N]);
-	XX = XX(:); YY = YY(:);
-	
+PP = out1.state(:,9001:end);
+%PP = result.state;
+%PP = clustered_state;
+
+f = figure(100);
+makemovie = 0;
+
+idx = ones(1,N*M);
+
+[XX, YY] = meshgrid([1:M],[1:N]);
+XX = XX(:); YY = YY(:);
+
 
 % 	if exist('linspecer')
 % 		LSpec = linspecer(length(unique(idx)))
@@ -322,33 +336,33 @@ N=10;M=10;
 %     else
 % 		set(a(1), 'colororder', jet(length(unique(idx))));
 %     end
-		
-		for t = 2:size(PP,2)
-            if ~ishghandle(f)
-                break;
-            end
-			SS = reshape(PP(:,t),N,M);
-			cla
-			% imagesc(reshape(theta_t(:,t),N,M))
-			mesh(SS); hold on
-			scatter3(XX, YY ,PP(:,t),60,'filled')
-			title('phase')
-			caxis([0 2*pi])
-			zlim([-3 3])
 
-			drawnow
-			if makemovie
-                % TODO first frame of movie missing t=1???
-				MOV(t-1) = getframe(f);
-			end
-
-        end
+for t = 2:size(PP,2)
+    if ~ishghandle(f)
+        break;
+    end
+    SS = reshape(PP(:,t),N,M);
+    cla
+    % imagesc(reshape(theta_t(:,t),N,M))
+    mesh(SS); hold on
+    scatter3(XX, YY ,PP(:,t),60,'filled')
+    title('phase')
+    caxis([0 2*pi])
+    zlim([-3 3])
+    
+    drawnow
+    if makemovie
+        % TODO first frame of movie missing t=1???
+        MOV(t-1) = getframe(f);
+    end
+    
+end
 
 %% 2 Temp adjacency matrix
 figure
 N = 4; M = 4; radius = 1;
 [X Y] = meshgrid([1:N],[1:M]);
-X = X(:); Y = Y(:); 
+X = X(:); Y = Y(:);
 
 % # compute adjacency matrix
 connectivity = squareform( pdist([X Y], 'euclidean') <= radius );
@@ -376,7 +390,7 @@ title('Sigmoid Connectivity Adjustment')
 figure
 dTimePos = 1;
 dTimeNeg = 1;
-A = [1 1];
+A = [0.5 0.5];
 tau = [0.002 0.002];
 t = linspace(-0.02,0.02,1000);
 ts = t>0;
@@ -403,15 +417,15 @@ tau_range = [0.1 0.2 0.5 1 5 10 20 50 100 250];
 tic
 for j=1:10
     parfor i=1:10
-
-plasticity = {'STDP' 1 [1 0] [tau_range(i) tau_range(j)]};
-output = kuramotoSheet([10 10],10,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling);
-results_parameters{i,j}= output.parameters;
-results_adjacency{i,j} = output.adjacency{end};
-
-output = [];
-
-end
+        
+        plasticity = {'STDP' 1 [1 0] [tau_range(i) tau_range(j)]};
+        output = kuramotoSheet([10 10],10,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling);
+        results_parameters{i,j}= output.parameters;
+        results_adjacency{i,j} = output.adjacency{end};
+        
+        output = [];
+        
+    end
 end
 toc
 

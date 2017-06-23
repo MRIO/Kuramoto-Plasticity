@@ -69,8 +69,9 @@ anim = 1; makemovie = 0;
     p.addParameter('training_signal',[]) % Training Phases
     p.addParameter('training_time',0.25) % in seconds
     p.addParameter('sigmoid',[0 5]); % [1.25 5] gives range between 0 and 10
-    p.addParameter('init_scaling', 10); %Scales the initial connectivity, different from 'scaling' which only affects the connectivity after sigmoid has been applied.
+    p.addParameter('init_scaling', 1); %Scales the initial connectivity, different from 'scaling' which only affects the connectivity after sigmoid has been applied.
     p.addParameter('decay',0) % decay/second
+    p.addParameter('stepval',0.20001);
 
 	p.parse(varargin{:});
 
@@ -95,6 +96,7 @@ anim = 1; makemovie = 0;
     sigmoid = p.Results.sigmoid;
     init_scaling = p.Results.init_scaling;
     decay = p.Results.decay;
+    stepval = p.Results.stepval;
 
 	N = netsize(1);
 	M = netsize(2);
@@ -106,7 +108,6 @@ anim = 1; makemovie = 0;
 % [=================================================================]
 
 rng(seed,'twister')
-
 if isvector(oscillators)
 	omega_i = oscillators;
 else
@@ -268,7 +269,7 @@ MP = zeros(simtime*(1/dt));
 %  simulate
 % [=================================================================]
 
-sConnectivity = sigmoidConnectivity(connectivity, sigmoid(1), sigmoid(2));
+sConnectivity = sigmoidConnectivity(connectivity, sigmoid(1), sigmoid(2),stepval);
 adjacency{1} = sConnectivity;
 spikeTime = zeros(N*M,1); requiresUpdate = zeros(N*M);
 
@@ -334,7 +335,7 @@ for t = 2:simtime/dt
     
     connectivity = connectivity - decay.*dt;
     connectivity(connectivity<0)=0;
-    sConnectivity = sigmoidConnectivity(connectivity,sigmoid(1),sigmoid(2));
+    sConnectivity = sigmoidConnectivity(connectivity,sigmoid(1),sigmoid(2),stepval);
     adjacency{t} = sConnectivity;
 	% [=================================================================]
 	%  order parameter
@@ -464,11 +465,12 @@ out.seed = seed;
 % out.all =  sin(mod(theta_t,2*pi));
 end
 
-function W = sigmoidConnectivity(connectivity, a, c)
+function W = sigmoidConnectivity(connectivity, a, c, stepval)
     if a==0
         W=connectivity;
     else
         W = sigmf(connectivity, [a c]);
+        W = heaviside(W-stepval);
     end
     
 %    W(connectivity<0)=0; % lower bound (actual) connectivity before this function
