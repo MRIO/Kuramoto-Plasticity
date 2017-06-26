@@ -1,12 +1,16 @@
 
 
 % analyze_clusters_bridges.m
+
+profile_brick_curlies = 1;
 plotcellscatters  = 1;	sel_fields = { 'g_CaL', 'g_h' 'ampl' 'freq_each'};
+
 
 plotreconstruction = 0; 
 plotselectedclusters = 0;
 	makevideo = 0
 plotconnectivityhistogram  = 0; % comparison of degree between clusters and bridges
+distance_histogram = 0;
 
 plotclustermemberaverages = 0;
 
@@ -15,7 +19,9 @@ plotbridgeandneighbors_Vm = 0;
 
 plotclustercellactivity = 0;
 
-analyze_group_stim = 0;
+analyze_group_stim = 1;
+activitydifference = 1;
+spectral_clustering = 1;
 
 
 STOhistograms = 0;
@@ -25,6 +31,15 @@ exampleclustersync = 0;
 bridgecond_pspace = 0;
 
 boxplots = 0;
+
+
+
+% [================================================]
+%  default colors
+% [================================================]
+
+bridgecolor = [.2 .2 .9 ];
+curlycolor = [ .2 .7 .2];
 
 
 if not(exist('st_st'))
@@ -37,22 +52,21 @@ end
 %  profile simulations
 % [================================================]
 
+if profile_brick_curlies
+	if not(exist('R'))
+		sims{1}.W = bridg_curlies;
+		sims{2}.W = curlies;
+		sims{3}.W = curlies;
+		sims{4}.W = brick;
+		tslice = 500:8000;
 
-if not(exist('R'))
-	sims{1}.W = bridg_curlies;
-	sims{2}.W = curlies;
-	sims{3}.W = curlies;
-	sims{4}.W = brick;
-	tslice = 500:8000;
-
-	for nsim = 1:length(sims)
-		statevar{nsim} = double(sims{nsim}.networkHistory.V_soma(:,tslice)); % with gaps 
-		R{nsim} = profile_sim(sims{nsim},'tslice',tslice); % bridges and curlies
+		for nsim = 1:length(sims)
+			statevar{nsim} = double(sims{nsim}.networkHistory.V_soma(:,tslice)); % with gaps 
+			R{nsim} = profile_sim(sims{nsim},'tslice',tslice); % bridges and curlies
+		end
+		
 	end
-	
 end
-
-
 
 % [=================================================================]
 %  connectivity
@@ -74,22 +88,69 @@ set(0,'defaultfigurecolormap', linspecer(10))
 
 if plotconnectivityhistogram
 	% effective number of connections clusters x bridges
+	bins = [0:20];
+	
 	[connhistC bins] =  hist(curlies.stats.connections,[0:20]);
 	[connhistB bins] =  hist(bridges.stats.connections(find(bc)),[0:20]);
+	
 	figure
+	B = bar(bins, [connhistB; connhistC]','stacked','edgecolor', 'none');
 
 
-	B = bar(bins, [connhistB; connhistC]','stacked','edgecolor', 'none');plotscatters
 
-	B(1).FaceColor  = [.9 0 .2 ];
-	B(2).FaceColor = [ .2 .7 .2];
+	B(1).FaceColor  = bridgecolor;
+	B(2).FaceColor = curlycolor;
 	title('degree')
 	xlabel('number of connections')
 	legend({'bridges' 'curlies'})
+
+	% number of connections per cell 
+	NC{1} = sum(sim_RM{1}.networkParameters.connectivityMatrix>0);
+	NC{2} = sum(sim_RM{2}.networkParameters.connectivityMatrix>0);
+	NC{3} = sum(sim_RM{3}.networkParameters.connectivityMatrix>0);
+
+	% mean and std excluding bridge cells
+	[mean(NC{1}(~bc)), std(NC{1}(~bc));
+	 mean(NC{2}(~bc)), std(NC{2}(~bc));
+	 mean(NC{3}(~bc)), std(NC{3}(~bc))]
+	
+	
+	figure
+	subplot(3,1,1)
+	 hist(NC{1}(~bc) ,[0:15])
+	 title('curlies')
+
+	subplot(3,1,2)
+	 hist(NC{2}(~bc),[0:15])
+	 title('bridges+curlies')
+
+	subplot(3,1,3)
+	 hist(NC{3}(~bc),[0:15])
+	 title('brick')
+
+histopatch = @(x,y,c) patch( [x 0], [y 0], c);
+
+figure
+	subplot(3,1,1)
+	 H1_nonBC = hist(NC{1}(~bc) ,[0:15]);
+	 H1_BC    = hist(NC{1}      ,[0:15]);
+	 title('curlies')
+
+	subplot(3,1,2)
+	 H2_nonBC = hist(NC{2}(~bc),[0:15]);
+	 H2_BC    = hist(NC{2},[0:15]);
+	 title('bridges+curlies')
+
+	subplot(3,1,3)
+	 H2_nonBC =hist(NC{3}(~bc),[0:15])
+	 title('brick')
+
+
+
 end
 
 
-distance_histogram = 1;
+
 if distance_histogram
 	[rr cc v_] = find(bridg_curlies.W);
 	 %overall distance matrix
@@ -100,16 +161,34 @@ if distance_histogram
 	 Wcur = bridg_curlies.W(find(not(bc)), find(not(bc)));
 
 	 % connections from bridges to bridges and curlies
-	 Wbri = bsxfun(@times, bridg_curlies.W, bc);
+	 Wbridge = bsxfun(@times, bridg_curlies.W, bc);
+	 Wbrick  = brick.W;
 	 
 	 % indices of nonzero distances (in D  and ind D_cur2cur).
 	 nonzero_cur2cur = find( (triu(D_cur2cur)-eye(size(D_cur2cur))).*Wcur);
-	 nonzero_bri2cur = find( (triu(D)-eye(size(D))).*Wbri);
+	 nonzero_bri2cur = find( (triu(D)-eye(size(D))).*Wbridge);
+	 nonzero_brick   = find( (triu(D)-eye(size(D))).*Wbrick);
 
-	 dsup = [0:10:500];
-	 hcur  = hist(D_cur_to_cur(nonzero_cur2cur)  ,dsup);
-	 hbri = hist( D(nonzero_bri2cur) ,dsup);
-	 bar(dsup,[hcur ; hbri]')
+	 dsup    = [0:10:500];
+	 hcur    = hist( D_cur2cur(nonzero_cur2cur)  ,dsup);
+	 hbridge = hist( D(nonzero_bri2cur) ,dsup);
+	 hbrick  = hist( D(nonzero_brick)   ,dsup);
+	 
+	 figure
+	 subplot(2,1,1)
+	 patch([dsup 0],[hcur 0], curlycolor)
+	 patch([dsup 0],[hbridge 0], bridgecolor)
+	 alpha(.3)
+	 title('curlies and bridges')
+	 legend({'curlies' ; 'bridges'})
+	 ylim([0 500])
+	 subplot(2,1,2)
+	 patch([dsup 0],[hbrick 0], [.7 .7 .7]);
+	 alpha(.3)
+	 ylim([0 500])
+	 xlabel('distance \mum')
+	 legend('all')
+	 
 end
 
 
@@ -512,7 +591,7 @@ end
 
 
 if  analyze_group_stim
-	 load /Users/M/Synced/Titan/Bench4/curlies_bridges_stim_pair22-Mar-2017.mat
+	 load curlies_bridges_stim_pair22-Mar-2017.mat
 	 sims = sim; clear sim
 	 tslice = [500:8000];
 	 g1 = find(clusters==34);
@@ -522,7 +601,7 @@ if  analyze_group_stim
 
 
 	M{1} = phase_distribution_over_time(sims{1},'duration',tslice,'group',g1g2);
-	saveallfigs('prefix', 'withbridges_1clusterstim','style','12x6')
+	% saveallfigs('prefix', 'withbridges_1clusterstim','style','12x6')
 	close all
 		
 	M{2} = phase_distribution_over_time(sims{2},'duration',tslice,'group',g1g2);
@@ -531,8 +610,8 @@ if  analyze_group_stim
 
 
 	M{3} = phase_distribution_over_time(sims{3},'duration',tslice,'group',g1g2);
-	saveallfigs('prefix', 'withoutbridges_1clusterstim','style','12x6')
-	close all
+	% saveallfigs('prefix', 'withoutbridges_1clusterstim','style','12x6')
+	% close all
 	
 	M{4} = phase_distribution_over_time(sims{4},'duration',tslice,'group',g1g2);
 	% saveallfigs('prefix', 'withoutbridges_2clusterstim','style','12x6')
@@ -598,35 +677,98 @@ end
 
 M{1} = phase_distribution_over_time(sims{1},'duration',[2900:3500], 'animate', 1);
 
-activitydifference = 1;
+
 if activitydifference
 	load /Users/M/Synced/Titan/Bench4/curlies_bridges_randmaskstim22-Mar-2017.mat
+	g1 = find(clusters==34);
+	g2 = find(clusters==41);
+	g1g2 = find(clusters==41 | clusters==34);
+
 	figure
 	sims{2}.W = bridg_curlies;
 	sims{3}.W = bridg_curlies;
-	replayResults_clusters(sims{2},'savemovie',1,'time_slice', [2000:3500])
-	replayResults_clusters(sims{3},'savemovie',1,'time_slice', [2000:3500])
+	replayResults_clusters(sims{2},'savemovie',0,'time_slice', [2000:3500])
+	replayResults_clusters(sims{3},'savemovie',0,'time_slice', [2000:3500])
 	actdif = [sim{2}.networkHistory.V_soma(:,3000:5000) - sim{3}.networkHistory.V_soma(:,3000:5000)];
 	imagesc([repmat(sim{2}.perturbation.mask{1}*10-5,1,200) actdif])
 	set(gca,'clim',[-5 5])
 end
 
-render_volumetric_activity = 1;
+
 if render_volumetric_activity
 	load /Users/M/Synced/Titan/Bench4/curlies_bridges_randmaskstim22-Mar-2017.mat
 	tslice = 1000:5000;
 	V1 = sim{1}.networkHistory.V_soma(:,tslice);
 	V2 = sim{2}.networkHistory.V_soma(:,tslice);
 	V3 = sim{3}.networkHistory.V_soma(:,tslice);
-	V4 = sim{4}.networkHistory.V_soma(:,tslice);
-	sim{4}.W = brick;
-	plot_volume(V1, JM394_horizontal_coordinates(2:end,:),tslice)
+	V4 = sim{4}.networkHistory.V_soma(:,tslice); slice)
 	plot_volume(V2, JM394_horizontal_coordinates(2:end,:),tslice)
 	plot_volume(V3, JM394_horizontal_coordinates(2:end,:),tslice)
 	plot_volume(V4, JM394_horizontal_coordinates(2:end,:),tslice)
 end
 
-spectral_clustering = 1;
+if cluster_bridges_netstructs
+	plotnetstruct(brick.W, bridg_curlies.coords(:,1), bridg_curlies.coords(:,2), bridg_curlies.coords(:,3), (bridg_curlies.stats.clusters>-1)*3);
+	saveallfigs('prefix', 'brick', 'style', '19x19')
+	close all
+
+	plotnetstruct(bridg_curlies.W, bridg_curlies.coords(:,1), bridg_curlies.coords(:,2), bridg_curlies.coords(:,3), bridg_curlies.stats.clusters);
+	saveallfigs('prefix', 'bri+cur', 'style', '19x19')
+	close all
+
+	plotnetstruct(curlies.W, bridg_curlies.coords(:,1), bridg_curlies.coords(:,2), bridg_curlies.coords(:,3), bridg_curlies.stats.clusters);
+	saveallfigs('prefix', 'curlies', 'style', '19x19')
+	close all
+
+end
+
+phase_activity_volume_snapshots = 1;
+if phase_activity_volume_snapshots
+	savemovie = 1;
+	load('curlies_bridges_randmaskstim22-Mar-2017.mat')
+	framestoprint = [2226:1:3850];
+	mkdir sim1_randmask
+	cd sim1_randmask/
+	animate_volume_hilbert(sim_RM{1}, framestoprint,savemovie);
+	close all
+	cd ..
+
+	mkdir sim2_randmask
+	cd sim2_randmask/
+	animate_volume_hilbert(sim_RM{2}, framestoprint,savemovie);
+	close all
+	cd ..
+
+	mkdir sim3_randmask
+	cd sim3_randmask/
+	animate_volume_hilbert(sim_RM{3}, framestoprint,savemovie);
+	close all
+	cd ..
+
+		framestoprint = [2226:1:3850];
+	load('curlies_bridges_nostim22-Mar-2017.mat')
+
+	mkdir sim1_nostim
+	cd sim1_nostim/
+	animate_volume_hilbert(sim_nostim{1}, framestoprint,savemovie);
+	close all
+	cd ..
+
+	mkdir sim2_nostim
+	cd sim2_nostim/
+	animate_volume_hilbert(sim_nostim{2}, framestoprint,savemovie);
+	close all
+	cd ..
+
+	mkdir sim3_nostim
+	cd sim3_randmask/
+	animate_volume_hilbert(sim_nostim{3}, framestoprint,savemovie);
+	close all
+	cd ..
+end
+
+
+
 if spectral_clustering
 	% load /Users/M/Synced/Titan/Bench4/curlies_bridges_randmaskstim22-Mar-2017.mat
 	% load /Users/M/Synced/Projects/Experiments/Olive/model/simresults/clusters_bridges/clusters_curlies_bridges_22-Jan-2017.mat
@@ -636,8 +778,8 @@ if spectral_clustering
 
 
 
-	for ss = 1:3
-		ss = 5;
+	% for ss = 1:3
+		ss = 3;
 		PD = phase_distribution_over_time(sims{ss}, 'duration', [2000:5000]);
 		ph = PD.phases.pop{2};
 		x = sin(ph(:,2000:5000));
@@ -647,8 +789,7 @@ if spectral_clustering
 		c = spect_clust(rho, 50);
 		[bic, aic] = baic(x, c);
 
-
-	end
+	% end
 
 
 
@@ -690,5 +831,85 @@ if spectral_clustering
 	fshow(c.label(:,10))
 end
 
-	
+
+randstim_carpet_diffs = 1;
+if randstim_carpet_diffs
+	clear
+	load curlies_bridges_randmaskstim22-Mar-2017.mat
+	tslice = [1:10000];
+	for ii = 1:3
+		H{ii} = hilbert_of_membranepotential(sim_RM{ii}.networkHistory.V_soma(:,tslice));
+	end
+
+	[v ord] = sort(clusters);
+	oord = ord(~bc);
+
+	load curlies_bridges_nostim22-Mar-2017
+
+	for ii = 1:3
+		H{ii+3} = hilbert_of_membranepotential(sim_nostim{ii}.networkHistory.V_soma(:,tslice));
+	end
+
+
+	for s = 1:6
+		for g = 1:50;
+			GS{s}(g,:) = abs(mean(H{s}.hilbert(clusters==g,:))) ;
+		end
+	end
+
+
+
+	f100 = figure;
+			
+	oord = ord(~bc(ord))
+	ax(1) = subplot(2,3,1);
+		imagesc(H{1}.hilbert(oord,:))
+		ax(2) = subplot(2,3,2);
+		imagesc(H{2}.hilbert(oord,:))
+		ax(3) = subplot(2,3,3);
+		imagesc(H{3}.hilbert(oord,:))
+
+		
+		
+		ax(4) = subplot(2,3,4);
+		imagesc(H{4}.hilbert(oord,:))
+		ax(5) = subplot(2,3,5);
+		imagesc(H{5}.hilbert(oord,:))
+		ax(6) = subplot(2,3,6);
+		imagesc(H{6}.hilbert(oord,:))
+
+
+	f200 = figure;
+	subplot(131), imagesc([H{4}.hilbert(oord,:) - H{1}.hilbert(oord,:)]')	
+	subplot(132), imagesc([H{5}.hilbert(oord,:) - H{2}.hilbert(oord,:)]')	
+	subplot(133), imagesc([H{6}.hilbert(oord,:) - H{3}.hilbert(oord,:)]')
+[
+end
+
+
+measuregropusync = 1;
+if measuregropusync
+
+	for s = 1:3
+
+		for g = 1:50;
+			groupsync{g} = measureGroupSync(sim_nostim{s}, 'duration',[2500:6000], 'plotme', 0, 'group', find(sim_nostim{s}.W.stats.clusters==g));
+			G(s,g) = groupsync{g}.sync(1);
+			V(s,g) = groupsync{g}.sync(2);
+		end
+	end
+
+end
+
+
+
+
+	f102 = figure;
+
+		ax(1) = subplot(3,1,1);
+		imagesc(abs(GS{1}),[0 1])
+		ax(2) = subplot(3,1,2);
+		imagesc(abs(GS{2}),[0 1])
+		ax(3) = subplot(3,1,3);
+		imagesc(abs(GS{3}),[0 1])
 

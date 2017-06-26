@@ -91,10 +91,11 @@ p8 = [0.013];    % leak
 Plist = [p{1}(:) p{2}(:) p{3}(:) p{4}(:) p{5}(:) p{6}(:) p{7}(:) p{8}(:)]; 
 
 noneurons = length(p{1}(:));
-netsize = [1 noneurons 1];noneuron s = prod(netsize);
+netsize = [1 noneurons 1];
+noneurons = prod(netsize);
 
-gnoise = [3 5 0 0];
-% gnoise = [0 0 0 0];
+% gnoise = [3 5 0 0];
+gnoise = [0 0 0 0];
 
 def_neurons = createDefaultNeurons(noneurons);
 twins = createDefaultNeurons(noneurons);
@@ -110,13 +111,14 @@ def_neurons.g_ld = p{8}(:);
 def_neurons.g_ls = p{8}(:);
 def_neurons.g_la = p{8}(:);
 
+def_neurons = jitter_cell_parameters(def_neurons,0.01);
 
  W = zeros(noneurons);
  % W = createW(noneurons);
 
-gaps = [ 0 0.05];
+gaps = [0 0.05];
 
-W = createW('all to all', [1 noneurons 1], [], gap, 0, 0, 0, 10, []);
+W = createW('all to all', [1 noneurons 1], [], 1, 0, 0, 0, 10, []);
 
 %%================================================]
 % 		 compute transients/steadystate
@@ -137,59 +139,95 @@ I_app = zeros(noneurons, simtime*(1/delta));
 I_app(:,(100*(1/delta):110*(1/delta))) = currentstep; % nAmpere 20/dt [nA/s.cm^2] 
 % I_app(:,(500*(1/delta):510*(1/delta))) = -currentstep;  % nAmpere 20/dt [nA/s.cm^2] 
 
-
+pert.mask{1}  	  = ones(noneurons,1);
+pert.type{1}	  = 'ampa';
+pert.duration{1}  = 1;
+pert.triggers{1}  = 100;
 
 % [===========================================================================================================]
 s = 0;
 for g = gaps
-s = s+1;
-   [simresults{g}] = IOnet('tempState', st_st.lastState ,'cell_parameters', def_neurons, ...
-   	'networksize', netsize,'appCurrent',I_app,'time',simtime ,'W', W ,'ou_noise', gnoise , ...
+	s = s+1;
+   [simresults{s}] = IOnet('tempState', st_st.lastState ,'cell_parameters', def_neurons, ...
+   	'networksize', netsize,'appCurrent',I_app,'time',simtime ,'W', W.W*g ,'ou_noise', gnoise , ...
    	'to_report', to_report ,'gpu', gpu ,  ...
    	'cell_function', cell_function ,'delta',delta,'sametoall', .0);
 
-   simresults{g}.Plist = Plist;
+   simresults{s}.Plist = Plist;
 
 end
 % [===========================================================================================================]
 	
-spks1 = spikedetect(simresults{1}, 0,0);
-spks2 = spikedetect(simresults{2}, 0,0);
+spks1 = spikedetect(simresults{1});
+spks2 = spikedetect(simresults{2});
+
+R{1} = profile_sim(simresults{1});
+R{2} = profile_sim(simresults{2});
+
+for c = 1:noneurons
+	[V_ POS]  = find(simresults{1}.networkHistory.V_soma(c,150:600)>-65,1,'first');
+	ADPD(c) = POS(1)-51;
+end
+R{1}.allneurons = horzcat(R{1}.allneurons,table(ADPD'));
+R{1}.allneurons.Properties.VariableNames{39} = 'ADPD';
+
+for c = 1:noneurons
+	[V_ POS]  = find(simresults{2}.networkHistory.V_soma(c,150:600)>-65,1,'first');
+	ADPD(c) = POS(1)-51;
+end
+R{2}.allneurons = horzcat(R{2}.allneurons,table(ADPD'));
+R{2}.allneurons.Properties.VariableNames{39} = 'ADPD';
 
 
-figure
-imagesc(st_st.networkHistory.V_soma,[-80 -20]), colorbar
-set(gca,'ytick', [1:noneurons],'yticklabel', num2str(Plist),'fontsize',8)
-legend(num2str(Plist))
+stacked = vertcat(R{2}.allneurons,R{1}.allneurons);
+G = [ones(noneurons,1)*2 ;ones(noneurons,1)*1];
+sel_fields = {'ampl', 'freq_each', 'ADPD'};
+NDscatter(stacked(:,sel_fields), G,'colors', [  0.7961    0.0941    0.1137;  0.4314    0.6902    0.8431]);
+
+%  0.7961    0.0941    0.1137
+%  0.1294    0.4431    0.7098
+
+% 0.4314    0.6902    0.8431
+% 0.9843    0.4275    0.2980
+
+% figure
+% imagesc(st_st.networkHistory.V_soma,[-80 -20]), colorbar
+% set(gca,'ytick', [1:noneurons],'yticklabel', num2str(Plist),'fontsize',8)
+% legend(num2str(Plist))
 
 
-figure
-ca = axis;
-set(0,'defaultaxescolororder', linspecer(length(Plist)))
-p = plot([1:steadystate_time],   st_st.networkHistory.V_soma');
-legend(num2str(Plist))
+% figure
+% ca = axis;
+% set(0,'defaultaxescolororder', linspecer(length(Plist)))
+% p = plot([1:steadystate_time],   st_st.networkHistory.V_soma');
+% legend(num2str(Plist))
 
+if 1
 
 figure
 imagesc(simresults{1}.networkHistory.V_soma,[-80 -20]), colorbar
 set(gca,'ytick', [1:noneurons],'yticklabel', num2str(Plist),'fontsize',8)
-title([num2str(spks.popfrequency) ' Hz'])
+% title([num2str(spks.popfrequency) ' Hz'])
 
 figure
 imagesc(simresults{2}.networkHistory.V_soma,[-80 -20]), colorbar
 set(gca,'ytick', [1:noneurons],'yticklabel', num2str(Plist),'fontsize',8)
-title([num2str(spks.popfrequency) ' Hz'])
+% title([num2str(spks.popfrequency) ' Hz'])
+end
 
 
 figure
 ca = axis;
-set(0,'defaultaxescolororder', linspecer(length(Plist)));
+cmap1= cbrewer('seq', 'Reds', length(Plist));
+set(0,'defaultaxescolororder', cmap1);
 p = plot([1:simtime],   simresults{1}.networkHistory.V_soma');
-legend(num2str(Plist))
+% legend(num2str(Plist))
 
-
-p = plot([1:simtime],   simresults{1}.networkHistory.V_soma');
-R = replayResults(simresults,[],0,1)
+figure
+cmap2= cbrewer('seq', 'Blues', length(Plist));
+set(0,'defaultaxescolororder', cmap2);
+p = plot([1:simtime],   simresults{2}.networkHistory.V_soma');
+% R = replayResults(simresults{1})
 
 
 % figure, plot(transients.networkHistory.V_soma',transients.networkHistory.Hcurrent_q'),legend(num2str(Plist)), title('V vs q (Hcurrent)')
@@ -197,12 +235,12 @@ R = replayResults(simresults,[],0,1)
 % figure, plot(transients.networkHistory.V_soma',transients.networkHistory.Calcium_r'),legend(num2str(Plist)),title('V vs Calcium\_r')
 
 
- pos = subplus(simresults{2}.networkHistory.I_cx36');
- neg = -subplus(-simresults{2}.networkHistory.I_cx36');
+%  pos = subplus(simresults{2}.networkHistory.I_cx36');
+%  neg = -subplus(-simresults{2}.networkHistory.I_cx36');
 
-area([pos ; neg])
+% area([pos ; neg])
 
-	receiving = area(pos,'edgecolor','none'), hold on
-	donating  = area(neg,'edgecolor','none')
+% 	receiving = area(pos,'edgecolor','none'), hold on
+% 	donating  = area(neg,'edgecolor','none')
 
 

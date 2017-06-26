@@ -15,15 +15,19 @@ sto_and_propfiring_histograms = 0;
 
 interperiodintervals = 1;
 
+sortedsampletraces = 1;
+
 
 tslice = 1:50000;
 
-if 0; %not(exist('Joinedsim'))
+if 0
 	addpath('/Users/M/Projects/Experiments/Olive/model/simresults/periodic_ampa/')
 	addpath('/Users/M/Synced/Projects/Experiments/Olive/model/simresults/periodic_ampa/')
 
 	F1 = 'periodic_ampa_replay_06_12_16_with_spont_gaptest8_iso_1Hz_50000_4_17-Jan-2017';
+	
 	F1 = 'periodic_ampa_replay_06_12_16_with_spont_gaptest8_iso_spont_50000_4_17-Jan-2017';
+
 	load(F1)
 	disp('loaded.')
 
@@ -78,13 +82,78 @@ if plotcellscatters_gap_gapless
 
 end
 
-sampletraces = 0;
+sampletraces = 1;
 if sampletraces
 	replayResults_3(sims{1})
 	replayResults_3(sims{2})
 end
 
 
+
+if sortedsampletraces
+
+	load noiseless_200.mat
+
+	colorder = flipud(cbrewer('seq', 'Greys', 30));
+	colrmap = flipud(cbrewer('seq', 'Greys', 30));
+
+	V1 = sims{1}.networkHistory.V_soma;
+	V2 = sims{2}.networkHistory.V_soma;
+
+	ampV1 = max(V1')-min(V1')
+	ampV2 = max(V2')-min(V2')
+
+	[V ordV1] = sort(ampV1)
+	[V ordV2] = sort(ampV2)
+	figure 
+	imagesc(V1(ordV1,1000:1500))
+	colormap(colrmap);
+	caxis([-70 -40])
+	axis off
+
+	figure 
+	imagesc(V2(ordV2,1000:1500))
+	colormap(colrmap);
+	caxis([-70 -40])
+	axis off
+	
+
+	
+	figure 
+	set(0,'defaultaxescolororder', colorder)
+	plot(V1(ordV1,1000:1500)')
+	hold on , plot(mean(V1(ordV1,1000:1500)),'b','linewidth', 2)
+	axis off, axis tight
+	ylim([-70, -40])
+	add_x_scalebar(gca, 100)
+
+
+	figure 
+	plot(V2(ordV2,1000:1500)')
+	hold on , plot(mean(V2(ordV2,1000:1500)),'r','linewidth', 2)
+	axis tight, axis off
+	ylim([-70, -40])
+	
+	add_x_scalebar(gca, 100)
+
+	saveallfigs('prefix', 'nonoise_traces_w_wo', 'style', '4x4')
+
+
+end
+
+
+noisesnippets = 1;
+
+if noisesnippets
+	for i = 1:5
+		ounoise(i,:) = OUnoise('seed', i, 'plotme', 0, 'simtime', 500, 'dt', 1 ,'thetas', 1/30);
+		figure
+		plot(subplus(ounoise(i,:)),'r'); hold on;plot(-subplus(-ounoise(i,:)),'b');
+		axis tight
+		ylim([-10 10])
+	end
+	saveallfigs('prefix',  'noisesnips', 'style', '4x4');
+end
 
 
 if triggeredphase
@@ -311,14 +380,3 @@ if interperiodintervals
 
 
 end
-
-alex_spectrogram = 0;
-if alex_spectrogram
-	y  = simresults.networkHistory.V_soma(1,:);
-	Spec(y,256,100,1000,'this',0)
-
-end
-
-
-
-

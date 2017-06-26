@@ -1,13 +1,13 @@
 % animate_volume.m
 
-function animate_volume_2(sim,frames, savemovie, varargin)
+function animate_volume_hilbert(sim,frames, savemovie, varargin)
 
 backgroundcolor = 'dark';
 backgroundcolor = 'light';
 
 plotvol = 1; 
 trigger = 1;
-showcolorbar = 1;
+showcolorbar = 0;
 scatterit = 1;
 printframes = true;
 
@@ -95,38 +95,38 @@ end
 
 
 
-f = figure('position', [440 37 481 761]);
+% f = figure('position', [440 37 481 761]);
 
 
 
-switch backgroundcolor
-	case 'light'
-		try
-			% load activity_cmap_hot
-			load activity_cmap_hot
-			cm = cmap;
-		catch
-			cm = hot(40); 
-		end
-		try
-		cm  = flipud(cbrewer('div', 'RdBu', 40));
-		catch
-		end
+% switch backgroundcolor
+% 	case 'light'
+% 		try
+% 			% load activity_cmap_hot
+% 			load activity_cmap_hot
+% 			cm = cmap;
+% 		catch
+% 			cm = hot(40); 
+% 		end
+% 		try
+% 		cm  = flipud(cbrewer('div', 'RdBu', 40));
+% 		catch
+% 		end
 
-		% !cm = bone(40);
-		set(f,'colormap', cm,'color', [1 1 1])
+% 		% !cm = bone(40);
+% 		set(f,'colormap', cm,'color', [1 1 1])
 
-	case 'dark'
-		try
-			% load activity_cmap_hot
-			load activity_cmap_jet
-			cm = cmap;
-		catch
-			cm = jet(40); 
-		end
+% 	case 'dark'
+% 		try
+% 			% load activity_cmap_hot
+% 			load activity_cmap_jet
+% 			cm = cmap;
+% 		catch
+% 			cm = jet(40); 
+% 		end
 		
-		set(f,'colormap', cm,'color', [.2 .2 .2])
-	end
+% 		set(f,'colormap', cm,'color', [.2 .2 .2])
+% end
 
 if savemovie
 	% fname = [num2str(rows) 'x' num2str(columns) '_.avi']
@@ -143,10 +143,6 @@ end
 
 	
 
-v = reshape(sim.networkHistory.V_soma(:,end), [depth breadth height]);
-
-maxv = 0;
-minv = min(min(min(min(sim.networkHistory.V_soma))));
 
 % interpolate and plot the volume
 
@@ -196,94 +192,75 @@ if isempty(frames)
 	frames = 1:simtime;
 end
 
+HH = hilbert_of_membranepotential(sim.networkHistory.V_soma(:,frames(1):frames(end)));
+HHH = HH.hilbert;
 
-for t = frames %1: simtime
-	
-	v = reshape(sim.networkHistory.V_soma(:,t), [ depth breadth height]);
-	% v = permute(v,[3 2 1]);
-	
-	cla
-
-	spkind =find(v>-20);
-
-	% for visibility of correlations
-	thresholdactivity = false;
-	if thresholdactivity
-		v(v>=-20) = -20;
-		v(spkind) = 10;
-
-	end
-	
-	
-	if interpv
-		
-		Vq = interp3(v, 5);
-		% alphamap(1+ 1./(1-exp(linspace(-2,2,100))))
-		cdata =Vq;
-
-	elseif ~interpv & plotvol
-		
-		cdata = v;
-		
-	elseif scatterit
-
-		v = reshape(sim.networkHistory.V_soma(:,t), 1, depth*breadth*height);
-		ac =v;
-		ac(1:10) =linspace(minv,0,10);
-		
-		scatter3(coords(:,1),coords(:,2), coords(:,3), (v+70)*10, ac','filled');
-		axis equal
-		colorbar
-		
-	end
-
-		adata = (cdata+70)/80;
-		adata2 = adata;
-		adata2(find(cdata<-55)) = .3;
-		adata2(find(cdata>=-55)) = 0;
-		adata2(find(cdata>-53)) = .3;
-		cdata= cdata;
-
-		vol3d('cdata',cdata,'Alpha',adata2);
-
-		view(38,34)
-		% view(60,10)
-		axis off
-		axis tight; 
-		daspect([1 1 1])
-		colorbar
-		caxis([-63 -40])
-		
+figure; imagesc(HHH)
 
 
-	if ismember(t, perturbation_triggers)
-		title([num2str(t) 'ms'],'backgroundcolor',[1 0 0], 'color', ones(1,3),'fontsize',30)
-	else
-		title([num2str(t) 'ms'],'backgroundcolor',[0 0 0], 'color', ones(1,3),'fontsize',30)
-	end
-	drawnow
+			
+			gksz = 7;
+			g3d3 = gaussKernel3d(.2,  gksz, ceil(gksz/2)); g3d3 = g3d3/sum(g3d3(:)); g3d3(g3d3<.005) = 0; g3d3(g3d3>0.005)=1; %g3d3 = g3d3/sum(g3d3(:)); 
+			% figure
+			% cla
+			% vol3d('cdata',g3d3)
+			% colorbar
+
+			coarseness = 4;
 
 
-	if printframes
-		export_fig(['netstate@' num2str(t) ],'-png','-m2')
-	end
+			fig_volume = figure('color', [1 1 1]);
+			ax_volume = axes;
+			colormap(ax_volume, linspecer(128));
+			% colorbar
+
+			for tt = frames-frames(1)+1;
+				VVVV = accumarray( round([coords(:,1), coords(:,2), coords(:,3)]/coarseness+1), HHH(:,tt));
+				NNNN = accumarray( round([coords(:,1), coords(:,2), coords(:,3)]/coarseness+1), 1);
+				NNNN(NNNN==0)=1;
+				VVVV = VVVV./NNNN;
+				
+
+				% CCCC = interp3(VVVV, 3);
+				% CCCC = convn(VVVV, g3d3, 'same');
+				% VVVV = CCCC;
+				CCCC = imdilate(VVVV,g3d3);
+
+				set(0,'CurrentFigure',fig_volume);
+			    % set(fig1,'CurrentAxes',a(3));
 
 
-	if savemovie
-		% set(f,'Visible','off')
-		currFrame = getframe(f);
-		writeVideo(vidObj,currFrame);
-	end
-end
+			    AAA = CCCC>.1;
+
+				cla(ax_volume)
+				set(ax_volume, 'clim',[0 2*pi])
+				
+				vol3d('cdata',CCCC, 'Alpha', AAA*.25 , 'texture','3D');
 
 
-if savemovie
-	close(vidObj)
-end
+				if tt==1;view(3) ; view(-22,-56.4);axis off; axis tight;  daspect([1 1 1]); axis equal; end
+				title([num2str(frames(1)+ tt) 'ms'])
+				drawnow
+				if savemovie
+					writeVideo(vidObj, getframe(fig_volume))
+				end
 
-% this is how the olive works: by creating appropriate input, we can generate static phase differences between different muscle groups. 
-% These will produce complex spikes in their appropriate 
+				if printframes
+						prefix = 'netstate@';
+						style = '4x4';
+						fname = [prefix '_' num2str(frames(1)+tt) '.png'];
+						snam=style;
+						s=hgexport('readstyle',snam);
+					    s.Format = 'png';
+					    hgexport(fig_volume,fname,s);
+				end
 
+				
+
+			end
+			if savemovie
+				close(vidObj)
+			end
 
 
 
