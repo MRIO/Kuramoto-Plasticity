@@ -270,8 +270,10 @@ MP = zeros(simtime*(1/dt));
 % [=================================================================]
 
 sConnectivity = sigmoidConnectivity(connectivity, sigmoid(1), sigmoid(2),stepval);
+adjacency = cell(1,simtime/dt);
 adjacency{1} = sConnectivity;
 spikeTime = zeros(N*M,1); requiresUpdate = zeros(N*M);
+PP = zeros(size(theta_t));
 
 if plotme; f = figure(100); a(1) = subplot(121);a(2) = subplot(122); end
 for t = 2:simtime/dt
@@ -347,7 +349,7 @@ for t = 2:simtime/dt
 		k(t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
 	else
 		for ui = unique(idx)'
-			GP = theta_t(find(idx==ui),t);
+			GP = theta_t(idx==ui,t);
 			MP = circ_mean(GP)+pi;
 			
 			k(ui,t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
@@ -396,7 +398,7 @@ if plotme
 	XX = XX(:); YY = YY(:);
 	
 
-	if exist('linspecer')
+	if exist('linspecer','file')
 		LSpec = linspecer(length(unique(idx)))
 		set(ffff, 'colormap',   LSpec);
 		set(a(1), 'colororder', LSpec);

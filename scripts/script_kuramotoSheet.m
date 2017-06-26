@@ -223,6 +223,9 @@ colorbar
 %% STDP June 20+
 %parameters to vary: scaling, oscillators (distribution parametrize),
 %connectivity, radius, plasticity
+N = 100;
+M = 100;
+
 
 sigmoid = [10 0.5];
 sigmoid2 = [10 0.5];
@@ -242,10 +245,10 @@ init_scaling = 1; % Initial connectivity used in these tests
 
 switch 'uniform'
     case 'normal'
-        oscillators = (randn(100,1)*0.05+10);
+        oscillators = (randn(N*M,1)*0.05+10);
     case 'uniform'
-        interval = [5 15];
-        oscillators = interval(1) + (interval(2)-interval(1)).*rand(100,1);
+        interval = [9.5 10.5];
+        oscillators = interval(1) + (interval(2)-interval(1)).*rand(N*M,1);
     case 'multimodal normal'
         %%% create multimodal
         %mu = [7.5 10 12.5];
@@ -255,7 +258,7 @@ end
 oscillators = oscillators*2*pi;
 
 connectivity = 'euclidean';
-radius = 3;
+radius = 2;
 
 % scaling 4*pi, tau 002 latest optimal values for 3cluster 0625
 scaling = 4*pi;
@@ -267,10 +270,10 @@ stepval = 0.501;
 plasticity = {'STDP' 0.2 [1 1] [0.002 0.002]};
 plasticity2 = {'STDP' 0.2 [1 1] [0.002 0.002]};
 
-time = 10;
-steps = 10000;
-out1 = kuramotoSheet([10 10],scaling,'plotme', 0,'connectivity', connectivity, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
-out2 = kuramotoSheet([10 10],scaling2,'plotme', 0,'connectivity', 'all to all', 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
+time = 1;
+steps = 1000;
+out1 = kuramotoSheet([100 100],scaling,'plotme', 0,'connectivity', connectivity, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
+%out2 = kuramotoSheet([10 10],scaling2,'plotme', 0,'connectivity', 'all to all', 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
 
 close all
 
