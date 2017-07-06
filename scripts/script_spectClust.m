@@ -1,4 +1,4 @@
-x = sin(out1.state(:,100:end));
+x = sin(out2.state(:,9001:end));
 cc = partialcorr(x', mean(x)'); % partial corherelation w.r.t the mean
 
 %%

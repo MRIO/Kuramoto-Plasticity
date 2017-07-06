@@ -242,7 +242,7 @@ init_scaling = 100; % Initial connectivity used in these tests
 % Change distribution (uniform? bi/multi-modal gaussian? See notes), see
 % effect on cluster formation
 
-switch 'uniform'
+switch 'normal'
     case 'normal'
         oscillators = (randn(N*M,1)*0.05+10);
     case 'uniform'
@@ -266,8 +266,8 @@ scaling2 = 4*pi;
 stepval = 0.501;
 
 % Try varying STDP functions/parameters and effect on clusters
-plasticity = {'STDP' 0.2 [1 1] [0.002 0.002]};
-plasticity2 = {'null' 0.2 [1 1] [0.002 0.002]};
+plasticity = {'STDP' 0.3 [1 1] [0.002 0.002]};
+plasticity2 = {'STDP' 0.3 [1 1] [0.002 0.002]};
 
 time = 10;
 steps = 10000;
@@ -319,7 +319,7 @@ N=10;M=10;
 %PP = test_STDP_Random05_training{2}.state;
 %PP = test_STDP_Random05_4cluster{3}.state;
 
-PP = out1.state(:,9001:end);
+PP = out2.state(:,9001:end);
 PP = out1.state;
 %PP = result.state;
 %PP = clustered_state;
