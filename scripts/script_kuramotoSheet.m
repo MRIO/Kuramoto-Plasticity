@@ -36,7 +36,6 @@ colorbar
 subplot(1,2,2)
 imagesc(out2.adjacency{end})
 colorbar
-
 %% - Initial Conditions test
 N=10;M=10;
 oscillators = rand(N*M,1)*2*pi*10; %use default, oscillators = [];
@@ -178,12 +177,12 @@ init_scaling = 0;
 decay = 0;
 decay2 = 0;
 
-training = [0 10*2*pi];
-training_time = 0.5;
+training = [100 10*2*pi];
+training_time = 1;
 
 % Signal %
 training_signal = zeros(10);
-switch 2
+switch 4
     case 1 % 3cluster
         training_signal(:,1:3)=2/3*pi;
         training_signal(:,7:10)=4/3*pi;
@@ -195,14 +194,14 @@ switch 2
         training_signal = fliplr(checkerboard(5,1,1) > 0.5)*pi;
     case 4 % 2cluster
         training_signal(:,1:5) = pi;
-        
+    case 5 %uniform
 end
 training_signal = reshape(training_signal,100,1);
 %%%%%%%%%%
 
 
-time = 10;
-steps = 10000;
+time = 1;
+steps = 1000;
 out1 = kuramotoSheet([10 10],scaling,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time);
 out2 = kuramotoSheet([10 10],scaling2,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time);
 
@@ -223,8 +222,8 @@ colorbar
 %% STDP June 20+
 %parameters to vary: scaling, oscillators (distribution parametrize),
 %connectivity, radius, plasticity
-N = 100;
-M = 100;
+N = 10;
+M = 10;
 
 
 sigmoid = [10 0.5];
@@ -238,7 +237,7 @@ training = [0 10*2*pi];
 training_time = 0.5;
 training_signal = [];
 
-init_scaling = 1; % Initial connectivity used in these tests
+init_scaling = 100; % Initial connectivity used in these tests
 
 % Change distribution (uniform? bi/multi-modal gaussian? See notes), see
 % effect on cluster formation
@@ -268,12 +267,12 @@ stepval = 0.501;
 
 % Try varying STDP functions/parameters and effect on clusters
 plasticity = {'STDP' 0.2 [1 1] [0.002 0.002]};
-plasticity2 = {'STDP' 0.2 [1 1] [0.002 0.002]};
+plasticity2 = {'null' 0.2 [1 1] [0.002 0.002]};
 
-time = 1;
-steps = 1000;
-out1 = kuramotoSheet([10 10],scaling,'plotme', 0,'connectivity', connectivity, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
-%out2 = kuramotoSheet([10 10],scaling2,'plotme', 0,'connectivity', 'all to all', 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
+time = 10;
+steps = 10000;
+out1 = kuramotoSheet([N M],scaling,'plotme', 0,'connectivity', connectivity, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
+out2 = kuramotoSheet([N M],scaling2,'plotme', 0,'connectivity', 'all to all', 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
 
 close all
 
@@ -321,6 +320,7 @@ N=10;M=10;
 %PP = test_STDP_Random05_4cluster{3}.state;
 
 PP = out1.state(:,9001:end);
+PP = out1.state;
 %PP = result.state;
 %PP = clustered_state;
 
