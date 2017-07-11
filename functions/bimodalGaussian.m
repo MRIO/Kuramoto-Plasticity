@@ -1,7 +1,7 @@
 function values = bimodalGaussian(N, M, mu, sigma)
 % values = bimodalGaussian(N, M, mu, sigma)
 % Returns an N-by-M matrix containing pseudorandom values drawn from the
-% trimodal Gaussian distribution, with parameters as set by the user.
+% bimodal Gaussian distribution, with parameters as set by the user.
 % 
 % Input:
 %       mu    : Array of length 2, each value representing the mean for one of
