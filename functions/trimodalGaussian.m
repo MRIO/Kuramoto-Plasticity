@@ -1,17 +1,17 @@
-function values = bimodalGaussian(N, M, mu, sigma)
-% values = bimodalGaussian(N, M, mu, sigma)
+function values = trimodalGaussian(N, M, mu, sigma)
+% values = trimodalGaussian(N, M, mu, sigma)
 % Returns an N-by-M matrix containing pseudorandom values drawn from the
 % trimodal Gaussian distribution, with parameters as set by the user.
 % 
 % Input:
-%       mu    : Array of length 2, each value representing the mean for one of
-%               the two modes of the distribution.
+%       mu    : Array of length 3, each value representing the mean for one of
+%               the three modes of the distribution.
 %       sigma : Scalar representing the standard deviation of the modes.
 %               Each mode has the same standard deviation.
 
 errorThreshold = 0.0001;
 
-pdf       = @(x) (normpdf(x, mu(1), sigma) + normpdf(x, mu(2), sigma)) ./2;
+pdf       = @(x) (normpdf(x, mu(1), sigma) + normpdf(x, mu(2), sigma) + normpdf(x, mu(3), sigma)) ./3;
 range     = [min(mu)-4.*sigma max(mu)+4.*sigma 100000];
 t         = linspace(range(1), range(2), range(3));
 
