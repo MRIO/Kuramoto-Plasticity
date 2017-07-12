@@ -237,22 +237,21 @@ training = [0 10*2*pi];
 training_time = 0.5;
 training_signal = [];
 
-init_scaling = 100; % Initial connectivity used in these tests
+init_scaling = 0.5; % Initial connectivity used in these tests
 
 % Change distribution (uniform? bi/multi-modal gaussian? See notes), see
 % effect on cluster formation
 
-switch 'normal'
+switch 'uniform'
     case 'normal'
         oscillators = (randn(N*M,1)*0.05+10);
     case 'uniform'
         interval = [9.5 10.5];
         oscillators = interval(1) + (interval(2)-interval(1)).*rand(N*M,1);
     case 'multimodal normal'
-        %%% create multimodal
-        %mu = [7.5 10 12.5];
-        %sigma = 0.05;
-        %oscillators = normpdf(
+        mu = [9 11 13];
+        sigma = 0.05;
+        oscillators = trimodalGaussian(N,M,mu,sigma);
 end
 oscillators = oscillators*2*pi;
 
@@ -272,7 +271,7 @@ plasticity2 = {'STDP' 0.3 [1 1] [0.002 0.002]};
 time = 10;
 steps = 10000;
 out1 = kuramotoSheet([N M],scaling,'plotme', 0,'connectivity', connectivity, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
-out2 = kuramotoSheet([N M],scaling2,'plotme', 0,'connectivity', 'all to all', 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
+out2 = kuramotoSheet([N M],scaling2,'plotme', 0,'connectivity', 'null', 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
 
 close all
 
@@ -320,7 +319,7 @@ N=10;M=10;
 %PP = test_STDP_Random05_4cluster{3}.state;
 
 PP = out2.state(:,9001:end);
-PP = out1.state;
+%PP = out1.state;
 %PP = result.state;
 %PP = clustered_state;
 

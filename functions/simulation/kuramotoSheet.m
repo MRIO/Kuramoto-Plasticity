@@ -72,6 +72,7 @@ anim = 1; makemovie = 0;
     p.addParameter('init_scaling', 1); %Scales the initial connectivity, different from 'scaling' which only affects the connectivity after sigmoid has been applied.
     p.addParameter('decay',0) % decay/second
     p.addParameter('stepval',0.20001);
+    p.addParameter('record_adjacency',1);
 
 	p.parse(varargin{:});
 
@@ -97,6 +98,7 @@ anim = 1; makemovie = 0;
     init_scaling = p.Results.init_scaling;
     decay = p.Results.decay;
     stepval = p.Results.stepval;
+    record_adjacency = p.Results.record_adjacency;
 
 	N = netsize(1);
 	M = netsize(2);
@@ -124,6 +126,9 @@ if ischar(connectivity)
 switch connectivity
 	case 'all to all'
 		connectivity = ones(N*M) - eye(N*M);
+        
+    case 'null'
+        connectivity = zeros(N*M);
 
 	case 'chebychev'
         
@@ -270,10 +275,13 @@ MP = zeros(simtime*(1/dt));
 % [=================================================================]
 
 sConnectivity = sigmoidConnectivity(connectivity, sigmoid(1), sigmoid(2),stepval);
-adjacency = cell(1,simtime/dt);
-adjacency{1} = sConnectivity;
+
 spikeTime = zeros(N*M,1); requiresUpdate = zeros(N*M);
 PP = zeros(size(theta_t));
+if record_adjacency
+    adjacency = cell(1,simtime/dt);
+    adjacency{1} = sConnectivity;
+end
 
 if plotme; f = figure(100); a(1) = subplot(121);a(2) = subplot(122); end
 for t = 2:simtime/dt
@@ -338,7 +346,9 @@ for t = 2:simtime/dt
     connectivity = connectivity - decay.*dt;
     connectivity(connectivity<0)=0;
     sConnectivity = sigmoidConnectivity(connectivity,sigmoid(1),sigmoid(2),stepval);
-    adjacency{t} = sConnectivity;
+    if record_adjacency
+        adjacency{t} = sConnectivity;
+    end
 	% [=================================================================]
 	%  order parameter
 	% [=================================================================]
@@ -460,7 +470,9 @@ out.parameters = p.Results;
 out.oscillators = omega_i/(2*pi);
 out.orderparameter = abs(k);
 out.connectivity = connectivity;
-out.adjacency = adjacency;
+if record_adjacency
+    out.adjacency = adjacency;
+end
 out.meanphase = MP;
 out.seed = seed;
  if makemovie && plotme ; out.movie = MOV; end
