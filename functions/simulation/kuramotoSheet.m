@@ -1,12 +1,12 @@
 function out = kuramotoSheet(varargin)
 % function out = kuramotoSheet([N,M], K, 'Param', 'Value')]
-% 
+%
 % Calculates the sheet of kuramoto oscillators with different connectivity schemes.
-% User can select the oscillator frequencies, initial conditions, and 
+% User can select the oscillator frequencies, initial conditions, and
 % time base (dt for the forward euler solver)
-% The script also outputs the synchronization (kuramoto parameter), i.e., the 
+% The script also outputs the synchronization (kuramoto parameter), i.e., the
 % centroid of the phase of the group of oscillators.
-% 
+%
 % inputs:
 % 	networksize, [N M]
 % 	scaling for coupling - K
@@ -18,25 +18,25 @@ function out = kuramotoSheet(varargin)
 % 	out.orderparameter = synchrony measure (kuramoto parameter)
 % 	out.meanphase = mean phase of oscillators at t
 % 	out.seed = random seed
-% 
+%
 % parameter value pairs:
-% 
+%
 % ('radius', 4)
-% ('dt', 1e-3) 	
+% ('dt', 1e-3)
 % ('simtime',1) % in seconds
-% ('omega_mean', 10) 
-% ('plotme', 1) 
-% ('noise', 0) 
-% ('connectivity', []) 
+% ('omega_mean', 10)
+% ('plotme', 1)
+% ('noise', 0)
+% ('connectivity', [])
 % connectivity  = 'inverse dist';
 % connectivity  = 'euclidean';
 % connectivity = 'inverse dist';
 % connectivity = 'chebychev';
- % 
- % kuramotoSheet([50 50],105)
- % 
- % author: m@negrello.org
- % all rights to kuramoto and mathworks, all wrongs are mine ;D
+%
+% kuramotoSheet([50 50],105)
+%
+% author: m@negrello.org
+% all rights to kuramoto and mathworks, all wrongs are mine ;D
 
 %gpu = 0;
 
@@ -46,64 +46,64 @@ anim = 1; makemovie = 0;
 %  parse inputs
 % [=================================================================]
 
-	p = inputParser;
-	p.addRequired('networksize')  
-	p.addRequired('scaling')  
+p = inputParser;
+p.addRequired('networksize')
+p.addRequired('scaling')
 
-	p.addParameter('radius', 3)
-	p.addParameter('dt', 1e-3) 	
-	p.addParameter('time',1) % in seconds
-	p.addParameter('omega_mean', 7) % in Hz 
-	p.addParameter('init_cond', []) % in Hz 
-	p.addParameter('omega_std', 2) % in Hz 
-	p.addParameter('oscillators', []) 
-	p.addParameter('plotme', 1) 
-	p.addParameter('noise', 0) 
-	p.addParameter('connectivity', 'euclidean')  % adjacency matrix
-	p.addParameter('clusterize', [0 0 0 0],@isvector)
-	p.addParameter('seed', 0)
-    p.addParameter('plasticity', {0 1 1}, @iscell) % See implementation
-    
-    %%% Needs testing
-    p.addParameter('training',[0 10*2*pi]) %(1) - Training amplitude, (2) - training frequency
-    p.addParameter('training_signal',[]) % Training Phases
-    p.addParameter('training_time',0.25) % in seconds
-    p.addParameter('sigmoid',[0 5]); % [1.25 5] gives range between 0 and 10
-    p.addParameter('init_scaling', 1); %Scales the initial connectivity, different from 'scaling' which only affects the connectivity after sigmoid has been applied.
-    p.addParameter('decay',0) % decay/second
-    p.addParameter('stepval',0.20001);
-    p.addParameter('record_adjacency',1);
+p.addParameter('radius', 3)
+p.addParameter('dt', 1e-3)
+p.addParameter('time',1) % in seconds
+p.addParameter('omega_mean', 7) % in Hz
+p.addParameter('init_cond', []) % in Hz
+p.addParameter('omega_std', 2) % in Hz
+p.addParameter('oscillators', [])
+p.addParameter('plotme', 1)
+p.addParameter('noise', 0)
+p.addParameter('connectivity', 'euclidean')  % adjacency matrix
+p.addParameter('clusterize', [0 0 0 0],@isvector)
+p.addParameter('seed', 0)
+p.addParameter('plasticity', {0 1 1}, @iscell) % See implementation
 
-	p.parse(varargin{:});
+%%% Needs testing
+p.addParameter('training',[0 10*2*pi]) %(1) - Training amplitude, (2) - training frequency
+p.addParameter('training_signal',[]) % Training Phases
+p.addParameter('training_time',0.25) % in seconds
+p.addParameter('sigmoid',[0 5]); % [1.25 5] gives range between 0 and 10
+p.addParameter('init_scaling', 1); %Scales the initial connectivity, different from 'scaling' which only affects the connectivity after sigmoid has been applied.
+p.addParameter('decay',0) % decay/second
+p.addParameter('stepval',0.20001);
+p.addParameter('record_adjacency',1);
 
-	netsize = p.Results.networksize;
-	scaling = p.Results.scaling;
-	radius  = p.Results.radius;
-	connectivity = p.Results.connectivity;
-	dt = p.Results.dt;
-	simtime = p.Results.time;
-	omega_mean = p.Results.omega_mean;
-	omega_std = p.Results.omega_std;
-	plotme = p.Results.plotme;
-	noise = p.Results.noise;
-	clusterize = p.Results.clusterize;
-	seed = p.Results.seed;
-	init_cond = p.Results.init_cond;
-	oscillators = p.Results.oscillators;
-    plasticity = p.Results.plasticity;
-    training = p.Results.training;
-    training_signal = p.Results.training_signal;
-    training_time = p.Results.training_time;
-    sigmoid = p.Results.sigmoid;
-    init_scaling = p.Results.init_scaling;
-    decay = p.Results.decay;
-    stepval = p.Results.stepval;
-    record_adjacency = p.Results.record_adjacency;
+p.parse(varargin{:});
 
-	N = netsize(1);
-	M = netsize(2);
-	NO = prod(netsize);
-	idx = ones(1,NO);
+netsize = p.Results.networksize;
+scaling = p.Results.scaling;
+radius  = p.Results.radius;
+connectivity = p.Results.connectivity;
+dt = p.Results.dt;
+simtime = p.Results.time;
+omega_mean = p.Results.omega_mean;
+omega_std = p.Results.omega_std;
+plotme = p.Results.plotme;
+noise = p.Results.noise;
+clusterize = p.Results.clusterize;
+seed = p.Results.seed;
+init_cond = p.Results.init_cond;
+oscillators = p.Results.oscillators;
+plasticity = p.Results.plasticity;
+training = p.Results.training;
+training_signal = p.Results.training_signal;
+training_time = p.Results.training_time;
+sigmoid = p.Results.sigmoid;
+init_scaling = p.Results.init_scaling;
+decay = p.Results.decay;
+stepval = p.Results.stepval;
+record_adjacency = p.Results.record_adjacency;
+
+N = netsize(1);
+M = netsize(2);
+NO = prod(netsize);
+idx = ones(1,NO);
 
 % [=================================================================]
 %  randomize oscillator intrinsic frequencies
@@ -111,9 +111,9 @@ anim = 1; makemovie = 0;
 
 rng(seed,'twister')
 if isvector(oscillators)
-	omega_i = oscillators;
+    omega_i = oscillators;
 else
-	omega_i = (randn(N*M,1)*omega_std+omega_mean)*2*pi;
+    omega_i = (randn(N*M,1)*omega_std+omega_mean)*2*pi;
 end
 
 scale_to_intrinsic_freq = 0;
@@ -123,45 +123,45 @@ scale_to_intrinsic_freq = 0;
 % [=================================================================]
 
 if ischar(connectivity)
-switch connectivity
-	case 'all to all'
-		connectivity = ones(N*M) - eye(N*M);
-        
-    case 'null'
-        connectivity = zeros(N*M);
-
-	case 'chebychev'
-        
-        [X Y] = meshgrid([1:N],[1:M]);
-        X = X(:); Y = Y(:); 
-
-        % # compute adjacency matrix
-		connectivity = squareform( pdist([X Y], 'chebychev') <= radius );
-
-	case 'euclidean'
-
-		[X Y] = meshgrid([1:N],[1:M]);
-        X = X(:); Y = Y(:); 
-
-        % # compute adjacency matrix
-		connectivity = squareform( pdist([X Y], 'euclidean') <= radius );
-
-
-	case 'inverse dist'
-		depth   = [1:N];
-        breadth = [1:M];
-        
-        [X Y] = meshgrid(depth,breadth);
-        X = X(:); Y = Y(:); 
-
-        % # compute adjacency matrix
-		connectivity = 1./squareform( pdist([X Y], 'euclidean') );
-
-
-
-	case 'random'
-		% W = (ones(N*M)-eye(N*M) ) .* rand(N*M);
-end
+    switch connectivity
+        case 'all to all'
+            connectivity = ones(N*M) - eye(N*M);
+            
+        case 'null'
+            connectivity = zeros(N*M);
+            
+        case 'chebychev'
+            
+            [X Y] = meshgrid([1:N],[1:M]);
+            X = X(:); Y = Y(:);
+            
+            % # compute adjacency matrix
+            connectivity = squareform( pdist([X Y], 'chebychev') <= radius );
+            
+        case 'euclidean'
+            
+            [X Y] = meshgrid([1:N],[1:M]);
+            X = X(:); Y = Y(:);
+            
+            % # compute adjacency matrix
+            connectivity = squareform( pdist([X Y], 'euclidean') <= radius );
+            
+            
+        case 'inverse dist'
+            depth   = [1:N];
+            breadth = [1:M];
+            
+            [X Y] = meshgrid(depth,breadth);
+            X = X(:); Y = Y(:);
+            
+            % # compute adjacency matrix
+            connectivity = 1./squareform( pdist([X Y], 'euclidean') );
+            
+            
+            
+        case 'random'
+            % W = (ones(N*M)-eye(N*M) ) .* rand(N*M);
+    end
 end
 
 connectivity = connectivity.*init_scaling;
@@ -173,16 +173,16 @@ connectivity = connectivity.*init_scaling;
 
 
 if clusterize(1)
-	W = connectivity;
-
+    W = connectivity;
+    
     groupsize = clusterize(2);
-
+    
     k = round(NO/groupsize);
     [idx] = kmeans([X Y], k);
-
+    
     ProbCluster = clusterize(3);
     ProbOriginal = clusterize(4);
-
+    
     cW = zeros(NO);
     for ii = 1:NO
         for jj = 1:NO
@@ -191,14 +191,14 @@ if clusterize(1)
             end
         end
     end
-
+    
     W = cW.* ( (rand(NO)+(eye(NO))) <= ProbCluster) + W.* ( rand(NO) <= ProbOriginal) ;
     
-
-	    out.stats.clusters = idx;
-
-
-connectivity = W;
+    
+    out.stats.clusters = idx;
+    
+    
+    connectivity = W;
 end
 
 
@@ -235,17 +235,17 @@ end
 
 ou_noise = zeros(NO, simtime/dt);
 if noise
-
-	mixalpha = .3;
-	sig = .05;
-	th = 10;
-	mu = 0;
-
-	for t = 2:simtime/dt
-		ou_noise(:,t) =  ou_noise(:,t-1) +th*(mu-ou_noise(:,t-1))*dt + ...
-	        (1-mixalpha)*sig*sqrt(dt)*randn(NO,1) + ...
-	         mixalpha*sig*sqrt(dt)*randn*ones(NO,1);
-	end
+    
+    mixalpha = .3;
+    sig = .05;
+    th = 10;
+    mu = 0;
+    
+    for t = 2:simtime/dt
+        ou_noise(:,t) =  ou_noise(:,t-1) +th*(mu-ou_noise(:,t-1))*dt + ...
+            (1-mixalpha)*sig*sqrt(dt)*randn(NO,1) + ...
+            mixalpha*sig*sqrt(dt)*randn*ones(NO,1);
+    end
 end
 
 
@@ -254,13 +254,13 @@ end
 % [=================================================================]
 %initial condition (initial phase)
 if isempty(init_cond)
-	theta_t(:,1) = rand(N*M,1)*2*pi;
+    theta_t(:,1) = rand(N*M,1)*2*pi;
 else
-	% disp('using initial condition (assuming between 0 and 2pi)')
-	theta_t(:,1) = init_cond;
+    % disp('using initial condition (assuming between 0 and 2pi)')
+    theta_t(:,1) = init_cond;
 end
 
-k = zeros(1,simtime*(1/dt)); 
+k = zeros(1,simtime*(1/dt));
 MP = zeros(simtime*(1/dt));
 
 % if gpu
@@ -282,21 +282,22 @@ if record_adjacency
     adjacency = cell(1,simtime/dt);
     adjacency{1} = sConnectivity;
 end
+dw = zeros(1,simtime/dt);
+dwabs = zeros(1,simtime/dt);
 
 if plotme; f = figure(100); a(1) = subplot(121);a(2) = subplot(122); end
 for t = 2:simtime/dt
-
-	phasedifferences = bsxfun(@minus, theta_t(:,t-1)',theta_t(:,t-1));
-
-	phasedifferences_W = sConnectivity.*scaling.*sin(phasedifferences);
-	
-	summed_sin_diffs = mean(phasedifferences_W,2); %ignore self?
-
-    %%% Training requires testing
-	theta_t(:,t) = theta_t(:,t-1) + dt*( omega_i + summed_sin_diffs + (t*dt<training_time)*training(1)*sin(theta_t(:,t-1)-training(2)*dt*t-training_signal(:,1)) ) + ou_noise(:,t);
+    phasedifferences = bsxfun(@minus, theta_t(:,t-1)',theta_t(:,t-1));
     
-
-	PP(:,t) = sin(mod(theta_t(:,t),2*pi));
+    phasedifferences_W = sConnectivity.*scaling.*sin(phasedifferences);
+    
+    summed_sin_diffs = mean(phasedifferences_W,2); %ignore self?
+    
+    %%% Training requires testing
+    theta_t(:,t) = theta_t(:,t-1) + dt*( omega_i + summed_sin_diffs + (t*dt<training_time)*training(1)*sin(theta_t(:,t-1)-training(2)*dt*t-training_signal(:,1)) ) + ou_noise(:,t);
+    
+    
+    PP(:,t) = sin(mod(theta_t(:,t),2*pi));
     
     switch plasticity{1}
         case 'seliger' %{2} - epsilon, {3} - alpha
@@ -330,12 +331,15 @@ for t = 2:simtime/dt
             
             W = dTimePos.*plasticity{3}(1).*exp(- deltaTime./plasticity{4}(1)) ...
                 -dTimeNeg.*plasticity{3}(2).*exp( deltaTime./plasticity{4}(2));
-
+            
+            dw(t) = sum(sum(W));
+            dwabs(t) = sum(sum(abs(W)));
+            
             % Update connectivity
             connectivity = connectivity + plasticity{2}.*W;
             
-            case 'test'
-                connectivity = connectivity + dt*plasticity{2}*((abs(phasedifferences)<=plasticity{3}).*phasedifferences - connectivity);
+        case 'test'
+            connectivity = connectivity + dt*plasticity{2}*((abs(phasedifferences)<=plasticity{3}).*phasedifferences - connectivity);
             
         case 'null'
         otherwise
@@ -349,23 +353,23 @@ for t = 2:simtime/dt
     if record_adjacency
         adjacency{t} = sConnectivity;
     end
-	% [=================================================================]
-	%  order parameter
-	% [=================================================================]
-	if ~clusterize(1)
-		GP = theta_t(:,t);
-		MP = circ_mean(GP)+pi;
-		
-		k(t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
-	else
-		for ui = unique(idx)'
-			GP = theta_t(idx==ui,t);
-			MP = circ_mean(GP)+pi;
-			
-			k(ui,t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
-		end
-	end
-
+    % [=================================================================]
+    %  order parameter
+    % [=================================================================]
+    if ~clusterize(1)
+        GP = theta_t(:,t);
+        MP = circ_mean(GP)+pi;
+        
+        k(t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
+    else
+        for ui = unique(idx)'
+            GP = theta_t(idx==ui,t);
+            MP = circ_mean(GP)+pi;
+            
+            k(ui,t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
+        end
+    end
+    
 end
 
 
@@ -376,79 +380,79 @@ end
 
 
 if plotme
-	
-	ffff = figure
-
-
-	subplot(2,2,1)
-	plot(linspace(0,simtime, simtime*dt^-1), mod(theta_t,2*pi)')
-	ylabel('phase (theta)')
-	subplot(2,2,2)
-	imagesc(connectivity), colorbar
-	title('connectivity')
-	subplot(2,2,3)
-	plot(linspace(0,simtime, simtime*dt^-1), sin(theta_t'))
-	ylabel('sin(theta)')
-	xlabel('seconds')
-	subplot(2,2,4)
-	hist(omega_i/(2*pi),N)
-	ylabel('#')
-	xlabel('frequency (Hz)')
-	
-	figure(f)
-	axes(a(2))
-		line(repmat(linspace(0,simtime, simtime*dt^-1), length(unique(idx)), 1)', [abs(k)]')
-
-
-		title('kuramoto parameter')
-		xlabel('time (ms)')
-		ylim([0 1])
-	
-	[XX YY] = meshgrid([1:M],[1:N]);
-	XX = XX(:); YY = YY(:);
-	
-
-	if exist('linspecer','file')
-		LSpec = linspecer(length(unique(idx)))
-		set(ffff, 'colormap',   LSpec);
-		set(a(1), 'colororder', LSpec);
-		set(a(2), 'colororder', LSpec);
-	else
-		set(ffff, 'colormap',   jet(length(unique(idx))));
-		set(a(1), 'colororder', jet(length(unique(idx))));
-		set(a(2), 'colororder', jet(length(unique(idx))));
-	end
-
-	
-	while anim
-		
-		for t = 2:simtime/dt
+    
+    ffff = figure
+    
+    
+    subplot(2,2,1)
+    plot(linspace(0,simtime, simtime*dt^-1), mod(theta_t,2*pi)')
+    ylabel('phase (theta)')
+    subplot(2,2,2)
+    imagesc(connectivity), colorbar
+    title('connectivity')
+    subplot(2,2,3)
+    plot(linspace(0,simtime, simtime*dt^-1), sin(theta_t'))
+    ylabel('sin(theta)')
+    xlabel('seconds')
+    subplot(2,2,4)
+    hist(omega_i/(2*pi),N)
+    ylabel('#')
+    xlabel('frequency (Hz)')
+    
+    figure(f)
+    axes(a(2))
+    line(repmat(linspace(0,simtime, simtime*dt^-1), length(unique(idx)), 1)', [abs(k)]')
+    
+    
+    title('kuramoto parameter')
+    xlabel('time (ms)')
+    ylim([0 1])
+    
+    [XX YY] = meshgrid([1:M],[1:N]);
+    XX = XX(:); YY = YY(:);
+    
+    
+    if exist('linspecer','file')
+        LSpec = linspecer(length(unique(idx)))
+        set(ffff, 'colormap',   LSpec);
+        set(a(1), 'colororder', LSpec);
+        set(a(2), 'colororder', LSpec);
+    else
+        set(ffff, 'colormap',   jet(length(unique(idx))));
+        set(a(1), 'colororder', jet(length(unique(idx))));
+        set(a(2), 'colororder', jet(length(unique(idx))));
+    end
+    
+    
+    while anim
+        
+        for t = 2:simtime/dt
             if ~ishghandle(a(1))
                 break;
             end
-			SS = reshape(PP(:,t),N,M);
-			axes(a(1)); 			cla
-			% imagesc(reshape(theta_t(:,t),N,M))
-			mesh(SS); hold on
-			scatter3(XX, YY ,PP(:,t),60,LSpec(idx,:),'filled')
-			title('phase')
-			caxis([0 2*pi])
-			zlim([-3 3])
-
-			drawnow
-			if makemovie
+            SS = reshape(PP(:,t),N,M);
+            axes(a(1)); 			cla
+            % imagesc(reshape(theta_t(:,t),N,M))
+            mesh(SS); hold on
+            scatter3(XX, YY ,PP(:,t),60,LSpec(idx,:),'filled')
+            title('phase')
+            caxis([0 2*pi])
+            zlim([-3 3])
+            
+            drawnow
+            if makemovie
                 % TODO first frame of movie missing t=1???
-				MOV(t-1) = getframe(f);
-			end
-
+                MOV(t-1) = getframe(f);
+            end
+            
         end
         
         if ~ishghandle(a(1))
             break;
         end
-		anim = input(['repeat? ; 0 - no, 1 - yes \n'  ])
-	end
-
+        anim = input(['repeat? ; 0 - no, 1 - yes \n'  ])
+    end
+    
 end
 
 
@@ -475,18 +479,20 @@ if record_adjacency
 end
 out.meanphase = MP;
 out.seed = seed;
- if makemovie && plotme ; out.movie = MOV; end
+if makemovie && plotme ; out.movie = MOV; end
+out.dw = dw;
+out.dwabs = dwabs;
 % out.all =  sin(mod(theta_t,2*pi));
 end
 
 function W = sigmoidConnectivity(connectivity, a, c, stepval)
-    if a==0
-        W=connectivity;
-    else
-        W = sigmf(connectivity, [a c]);
-        W = heaviside(W-stepval);
-    end
-    
+if a==0
+    W=connectivity;
+else
+    W = sigmf(connectivity, [a c]);
+    W = heaviside(W-stepval);
+end
+
 %    W(connectivity<0)=0; % lower bound (actual) connectivity before this function
 %    instead.
 end

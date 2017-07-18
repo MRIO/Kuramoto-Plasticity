@@ -38,8 +38,8 @@ training_signal = [];
 record_adjacency = 0;
 
 % DYNAMIC PARAMS - [initial (minus 1 step), final, steps]
-sigP  = [0 10 20];
-TauP  = [0.001 0.01 20];
+sigP  = [5 10 10];
+TauP  = [0.1 1 10];
 
 totalIter = sigP(3)*TauP(3);
 disp(['Simulation will run for ' mat2str(totalIter) ' iterations.'])
@@ -51,7 +51,6 @@ for ss = 1:sigP(3)
         disp(' ')
         disp(['Starting iteration ' mat2str(curIter) ' of ' mat2str(totalIter) ' iterations.'])
       
-        
         sigVal = sigP(1) + (sigP(2) - sigP(1))./sigP(3)*ss;
         TauVal = TauP(1) + (TauP(2) - TauP(1))./TauP(3)*TT;
         
@@ -80,6 +79,6 @@ for ss = 1:sigP(3)
         
         clear out1 out2 out3 sigVal TauVal interval oscillators plasticity
         timeIter = toc;
-        disp(['Last iteration took ' mat2str(timeIter) ' seconds. Estimated time remaining is ' mat2str(floor((totalIter-curIter)*timeIter/60)) ' seconds.'])
+        disp(['Last iteration took ' mat2str(timeIter) ' seconds. Estimated time remaining is ' mat2str(floor((totalIter-curIter)*timeIter/60)) ' minutes.'])
     end
 end
