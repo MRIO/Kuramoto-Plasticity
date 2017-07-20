@@ -38,8 +38,6 @@ function out = kuramotoSheet(varargin)
 % author: m@negrello.org
 % all rights to kuramoto and mathworks, all wrongs are mine ;D
 
-%gpu = 0;
-
 anim = 1; makemovie = 0;
 
 % [=================================================================]
@@ -58,9 +56,7 @@ p.addParameter('init_cond', []) % in Hz
 p.addParameter('omega_std', 2) % in Hz
 p.addParameter('oscillators', [])
 p.addParameter('plotme', 1)
-p.addParameter('noise', 0)
 p.addParameter('connectivity', 'euclidean')  % adjacency matrix
-p.addParameter('clusterize', [0 0 0 0],@isvector)
 p.addParameter('seed', 0)
 p.addParameter('plasticity', {0 1 1}, @iscell) % See implementation
 
@@ -73,6 +69,7 @@ p.addParameter('init_scaling', 1); %Scales the initial connectivity, different f
 p.addParameter('decay',0) % decay/second
 p.addParameter('stepval',0.20001);
 p.addParameter('record_adjacency',1);
+p.addParameter('GPU',0);
 
 p.parse(varargin{:});
 
@@ -85,12 +82,13 @@ simtime = p.Results.time;
 omega_mean = p.Results.omega_mean;
 omega_std = p.Results.omega_std;
 plotme = p.Results.plotme;
-noise = p.Results.noise;
-clusterize = p.Results.clusterize;
 seed = p.Results.seed;
 init_cond = p.Results.init_cond;
 oscillators = p.Results.oscillators;
 plasticity = p.Results.plasticity;
+plasticity_type = plasticity{1};
+plasticity{1} = [];
+plasticity_data = cell2mat(plasticity);
 training = p.Results.training;
 training_signal = p.Results.training_signal;
 training_time = p.Results.training_time;
@@ -99,6 +97,7 @@ init_scaling = p.Results.init_scaling;
 decay = p.Results.decay;
 stepval = p.Results.stepval;
 record_adjacency = p.Results.record_adjacency;
+gpu = p.Results.GPU;
 
 N = netsize(1);
 M = netsize(2);
@@ -166,42 +165,6 @@ end
 
 connectivity = connectivity.*init_scaling;
 
-
-% [=================================================================]
-%  this
-% [=================================================================]
-
-
-if clusterize(1)
-    W = connectivity;
-    
-    groupsize = clusterize(2);
-    
-    k = round(NO/groupsize);
-    [idx] = kmeans([X Y], k);
-    
-    ProbCluster = clusterize(3);
-    ProbOriginal = clusterize(4);
-    
-    cW = zeros(NO);
-    for ii = 1:NO
-        for jj = 1:NO
-            if idx(ii)==idx(jj)
-                cW(ii,jj) = 1;
-            end
-        end
-    end
-    
-    W = cW.* ( (rand(NO)+(eye(NO))) <= ProbCluster) + W.* ( rand(NO) <= ProbOriginal) ;
-    
-    
-    out.stats.clusters = idx;
-    
-    
-    connectivity = W;
-end
-
-
 % ensure that there are no self connections
 connectivity(logical(eye(M*N))) = 0;
 
@@ -212,42 +175,6 @@ connectivity(logical(eye(M*N))) = 0;
 if ~isvector(training_signal)
     training_signal = zeros(N*M,1);
 end
-
-
-% [=================================================================]
-%  Scale coupling parameter?
-% [=================================================================]
-
-% Hu, X., Boccaletti, S., Huang, W., Zhang, X., Liu, Z., Guan, S., & Lai, C.-H. (2014). Exact solution for first-order synchronization transition in a generalized Kuramoto model. Scientific Reports, 4, 7262–6. http://doi.org/10.1038/srep07262
-
-% Do not use scaling combined with plasticity? Or incorporate it
-% in the plasticity function?
-% if scale_to_intrinsic_freq
-% 	connectivity = bsxfun(@times, omega_i, connectivity) * scaling / NO;
-% else
-% 	connectivity = scaling*connectivity;
-% end
-
-
-% [=================================================================]
-%  create noise
-% [=================================================================]
-
-ou_noise = zeros(NO, simtime/dt);
-if noise
-    
-    mixalpha = .3;
-    sig = .05;
-    th = 10;
-    mu = 0;
-    
-    for t = 2:simtime/dt
-        ou_noise(:,t) =  ou_noise(:,t-1) +th*(mu-ou_noise(:,t-1))*dt + ...
-            (1-mixalpha)*sig*sqrt(dt)*randn(NO,1) + ...
-            mixalpha*sig*sqrt(dt)*randn*ones(NO,1);
-    end
-end
-
 
 % [=================================================================]
 %  randomize initial condition
@@ -260,58 +187,81 @@ else
     theta_t(:,1) = init_cond;
 end
 
-k = zeros(1,simtime*(1/dt));
-MP = zeros(simtime*(1/dt));
-
-% if gpu
-% 	theta_t = gpuArray(theta_t);
-% 	connectivity = gpuArray(connectivity);
-% 	ou_noise = gpuArray(ou_noise);
-% 	k = gpuArray(k);
-% end
+if gpu
+    theta_t = gpuArray(theta_t);
+    connectivity = gpuArray(connectivity);
+    
+    %%% New
+    scaling = gpuArray(scaling);
+    omega_i = gpuArray(omega_i);
+    dt = gpuArray(dt);
+    training = gpuArray(training);
+    training_signal = gpuArray(training_signal);
+    training_time = gpuArray(training_time);
+    plasticity_data = gpuArray(plasticity_data);
+    simtime = gpuArray(simtime);
+    
+    spikeTime = zeros(N*M,1,'gpuArray');
+    requiresUpdate = zeros(N*M,'gpuArray');
+    PP = zeros(size(theta_t),'gpuArray');
+    dw = zeros(1,simtime/dt,'gpuArray');
+    dwabs = zeros(1,simtime/dt,'gpuArray');
+else
+    spikeTime = zeros(N*M,1);
+    requiresUpdate = zeros(N*M);
+    PP = zeros(size(theta_t));
+    dw = zeros(1,simtime/dt);
+    dwabs = zeros(1,simtime/dt);
+end
 
 % [=================================================================]
 %  simulate
 % [=================================================================]
 
-sConnectivity = sigmoidConnectivity(connectivity, sigmoid(1), sigmoid(2),stepval);
+if gpu %Find alternative to IF statement
+    sConnectivity = arrayfun(@sigmoidFun,connectivity,sigmoid(1),sigmoid(2),stepval);
+else
+    sConnectivity = sigmoidFun(connectivity,sigmoid(1),sigmoid(2),stepval);
+end
 
-spikeTime = zeros(N*M,1); requiresUpdate = zeros(N*M);
-PP = zeros(size(theta_t));
 if record_adjacency
-    adjacency = cell(1,simtime/dt);
+    dt2=gather(dt);
+    simtime2=gather(simtime);
+    adjacency = cell(1,simtime2/dt2);
     adjacency{1} = sConnectivity;
 end
-dw = zeros(1,simtime/dt);
-dwabs = zeros(1,simtime/dt);
 
 if plotme; f = figure(100); a(1) = subplot(121);a(2) = subplot(122); end
 for t = 2:simtime/dt
+    disp(t)
     phasedifferences = bsxfun(@minus, theta_t(:,t-1)',theta_t(:,t-1));
     
     phasedifferences_W = sConnectivity.*scaling.*sin(phasedifferences);
     
-    summed_sin_diffs = mean(phasedifferences_W,2); %ignore self?
-    
-    %%% Training requires testing
-    theta_t(:,t) = theta_t(:,t-1) + dt*( omega_i + summed_sin_diffs + (t*dt<training_time)*training(1)*sin(theta_t(:,t-1)-training(2)*dt*t-training_signal(:,1)) ) + ou_noise(:,t);
+    summed_sin_diffs = mean(phasedifferences_W,2);
     
     
-    PP(:,t) = sin(mod(theta_t(:,t),2*pi));
+    if gpu % i know...
+        theta_t(:,t) = arrayfun(@computeKuramoto,theta_t(:,t-1), omega_i, summed_sin_diffs, training_time, training(1),training(2), training_signal,t,dt);
+    else
+        theta_t(:,t) = theta_t(:,t-1) + dt.*( omega_i + summed_sin_diffs + ((t.*dt)<training_time).*training(1).*sin(theta_t(:,t-1)-training(2).*dt.*t-training_signal(:,1)) );
+    end
     
-    switch plasticity{1}
+    PP(:,t) = sin(mod(theta_t(:,t),2.*pi));
+    
+    switch plasticity_type
         case 'seliger' %{2} - epsilon, {3} - alpha
             % Currently ignores spatial distance between oscillators, should
             % it?
-            connectivity = connectivity + dt*plasticity{2}* ...
-                ( plasticity{3} * cos(phasedifferences) - connectivity );
+            connectivity = connectivity + dt.*plasticity_data(1).* ...
+                ( plasticity_data(2) .* cos(phasedifferences) - connectivity );
             
         case 'STDP' % {2} - delta-adjustment: factor affecting weight change, {3} - [A1;A2], {4} - [tau1;tau2]
             %%% Does not yet account for sign(0)=0, also does not account for bsxfun result deltaTime=0 (as 0 is used to ignore elements)
             
             % Determines upward zero crossover (= spike) of each oscillator
             % and calculates time difference between all spikes
-            upwardZeroCross = sign(mod(theta_t(:,t),2*pi)-pi) > sign(mod(theta_t(:,t-1),2*pi)-pi);
+            upwardZeroCross = sign(mod(theta_t(:,t),2.*pi)-pi) > sign(mod(theta_t(:,t-1),2.*pi)-pi);
             spikeTime(upwardZeroCross) = t.*dt;
             
             deltaTime = bsxfun(@minus, spikeTime,spikeTime'); %deltaTime = t_i - t_j
@@ -320,7 +270,7 @@ for t = 2:simtime/dt
             % couples are determined
             requiresUpdate(:,upwardZeroCross) = 1;
             updateMatrix = requiresUpdate.*requiresUpdate';
-            updateMatrix(logical(eye(N*M))) = 0;
+            updateMatrix(logical(eye(N.*M))) = 0;
             requiresUpdate = requiresUpdate - updateMatrix;
             
             % Actual implementation of Spike timing-dependent plasticity
@@ -329,45 +279,42 @@ for t = 2:simtime/dt
             dTimePos = deltaTime > 0;
             dTimeNeg = deltaTime < 0;
             
-            W = dTimePos.*plasticity{3}(1).*exp(- deltaTime./plasticity{4}(1)) ...
-                -dTimeNeg.*plasticity{3}(2).*exp( deltaTime./plasticity{4}(2));
+            if gpu
+                W = arrayfun(@computeWeights,dTimePos,dTimeNeg,plasticity_data(2),plasticity_data(3), ...
+                    plasticity_data(4),plasticity_data(5),deltaTime);
+            else
+            W = dTimePos.*plasticity_data(2).*exp( -deltaTime./plasticity_data(4)) ...
+                -dTimeNeg.*plasticity_data(3).*exp( deltaTime./plasticity_data(5));
+            end
+            
+            
             
             dw(t) = sum(sum(W));
             dwabs(t) = sum(sum(abs(W)));
             
             % Update connectivity
-            connectivity = connectivity + plasticity{2}.*W;
+            connectivity = connectivity + plasticity_data(1).*W;
             
         case 'test'
-            connectivity = connectivity + dt*plasticity{2}*((abs(phasedifferences)<=plasticity{3}).*phasedifferences - connectivity);
+            connectivity = connectivity + dt*plasticity_data(1)*((abs(phasedifferences)<=plasticity_data(2)).*phasedifferences - connectivity);
             
         case 'null'
         otherwise
             disp('Running without a plasticity rule.')
-            plasticity{1} = 'null';
+            plasticity_type = 'null';
     end
     
     connectivity = connectivity - decay.*dt;
     connectivity(connectivity<0)=0;
-    sConnectivity = sigmoidConnectivity(connectivity,sigmoid(1),sigmoid(2),stepval);
+    
+    if gpu %Find alternative to IF statement
+        sConnectivity = arrayfun(@sigmoidFun,connectivity,sigmoid(1),sigmoid(2),stepval);
+    else
+        sConnectivity = sigmoidFun(connectivity,sigmoid(1),sigmoid(2),stepval);
+    end
+    
     if record_adjacency
         adjacency{t} = sConnectivity;
-    end
-    % [=================================================================]
-    %  order parameter
-    % [=================================================================]
-    if ~clusterize(1)
-        GP = theta_t(:,t);
-        MP = circ_mean(GP)+pi;
-        
-        k(t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
-    else
-        for ui = unique(idx)'
-            GP = theta_t(idx==ui,t);
-            MP = circ_mean(GP)+pi;
-            
-            k(ui,t) = mean( exp(1i*(bsxfun(@minus, GP, MP))));
-        end
     end
     
 end
@@ -461,23 +408,24 @@ end
 % [================================================]
 
 
-% if gpu
-% 	theta_t = gather(theta_t);
-% 	connectivity = gather(connectivity);
-% 	ou_noise = gather(ou_noise);
-% 	k = gather(k);
-% end
+if gpu
+    theta_t = gather(theta_t);
+    connectivity = gather(connectivity);
+    
+    PP = gather(PP);
+    omega_i = gather(omega_i);
+    dw = gather(dw);
+    dwabs = gather(dwabs);
+end
 
 out.state = PP;
 out.phase = theta_t;
 out.parameters = p.Results;
 out.oscillators = omega_i/(2*pi);
-out.orderparameter = abs(k);
 out.connectivity = connectivity;
 if record_adjacency
     out.adjacency = adjacency;
 end
-out.meanphase = MP;
 out.seed = seed;
 if makemovie && plotme ; out.movie = MOV; end
 out.dw = dw;
@@ -485,14 +433,15 @@ out.dwabs = dwabs;
 % out.all =  sin(mod(theta_t,2*pi));
 end
 
-function W = sigmoidConnectivity(connectivity, a, c, stepval)
-if a==0
-    W=connectivity;
-else
-    W = sigmf(connectivity, [a c]);
-    W = heaviside(W-stepval);
+function result = sigmoidFun(x,a,c,stepval)
+result = (1./(1+exp(-a.*(x-c)))) .* (x>stepval);
+% sigmoid .* heaviside
 end
 
-%    W(connectivity<0)=0; % lower bound (actual) connectivity before this function
-%    instead.
+function result = computeKuramoto(prevTheta, omega_i, summed_sin_diffs, training_time, training1,training2, training_signal,t,dt)
+result = prevTheta + dt.*( omega_i + summed_sin_diffs + ((t.*dt)<training_time).*training1.*sin(prevTheta-training2.*dt.*t-training_signal) );
+end
+
+function W = computeWeights(dTimePos,dTimeNeg,pData2,pData3,pData4,pData5,deltaTime)
+    W = dTimePos.*pData2.*exp( -deltaTime./pData4) -dTimeNeg.*pData3.*exp( deltaTime./pData5); 
 end

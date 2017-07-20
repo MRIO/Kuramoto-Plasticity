@@ -23,21 +23,23 @@ outFile      = matfile(outputFile, 'Writable', true);
 code         = [mfilename('fullpath') '.m'];
 copyfile(code,outputFolder);
 
+N = 10; M = 10;
+
 init_struct = struct('dw',{},'dwabs',{},'cc',{},'c',{},'bic',{},'aic',{}); %Make sure the output struct and init_struct have the same order, it really likes to bitch about this.
-init_struct(20,20).cc = [];
+init_struct(N,M).cc = [];
 outFile.out1 = init_struct;
 outFile.out2 = init_struct;
 outFile.out3 = init_struct;
 
-for ss=1:20
+for ss=1:N
     tic
     data1 = file.out1(ss,:);
     data2 = file.out2(ss,:);
     data3 = file.out3(ss,:);
     
-    output = cell(20,3);
+    output = cell(3,M);
     
-    for TT=1:20
+    for TT=1:M
         states    = cell(1,3);
         states{1} = data1(1,TT).state;
         states{2} = data2(1,TT).state;
