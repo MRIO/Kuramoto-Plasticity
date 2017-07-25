@@ -1,13 +1,23 @@
+%% NOTES
+% 
+%plot(out2.phase')
+%plot(diff(out2.phase)')
+%figure
+%subplot(2,1,1)
+%plot(mod(out2.phase',2*pi))
+%subplot(2,1,2)
+%plot(mod(diff(out2.phase)',2*pi))
+
+%%
+
 clear x cc rho c
 clf
 
-warning('Replaced with script_spectClust2.m')
 %x = sin(out2.state(:,9001:end));
 %x = diff(out2.phase(:,200:end)');
-x = out2.phase(:,200:end)';
-cc = corr(x);
-%cc = partialcorr(x', mean(x)'); % partial corherelation w.r.t the mean
-%imagesc(cc)
+x = out2.state(:,200:end);
+cc = calcSimilarity(x);
+
 %%
 subplot(331)
 plot(x'), axis tight
@@ -21,9 +31,7 @@ title('Partial correlation')
 
 %%
 
-rho = (cc + 1)/2; % normalize rho to get an affinity matrix 0<=rho<=1
-rho = (rho+rho')/2; % rho had better be symmetric
-c = spect_clust(rho, 20);
+c = spect_clust(cc,20);
 
 %%
 

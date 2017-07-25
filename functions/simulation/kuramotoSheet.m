@@ -233,7 +233,6 @@ end
 
 if plotme; f = figure(100); a(1) = subplot(121);a(2) = subplot(122); end
 for t = 2:simtime/dt
-    disp(t)
     phasedifferences = bsxfun(@minus, theta_t(:,t-1)',theta_t(:,t-1));
     
     phasedifferences_W = sConnectivity.*scaling.*sin(phasedifferences);
@@ -283,11 +282,9 @@ for t = 2:simtime/dt
                 W = arrayfun(@computeWeights,dTimePos,dTimeNeg,plasticity_data(2),plasticity_data(3), ...
                     plasticity_data(4),plasticity_data(5),deltaTime);
             else
-            W = dTimePos.*plasticity_data(2).*exp( -deltaTime./plasticity_data(4)) ...
-                -dTimeNeg.*plasticity_data(3).*exp( deltaTime./plasticity_data(5));
+                W = dTimePos.*plasticity_data(2).*exp( -deltaTime./plasticity_data(4)) ...
+                    -dTimeNeg.*plasticity_data(3).*exp( deltaTime./plasticity_data(5));
             end
-            
-            
             
             dw(t) = sum(sum(W));
             dwabs(t) = sum(sum(abs(W)));
@@ -443,5 +440,5 @@ result = prevTheta + dt.*( omega_i + summed_sin_diffs + ((t.*dt)<training_time).
 end
 
 function W = computeWeights(dTimePos,dTimeNeg,pData2,pData3,pData4,pData5,deltaTime)
-    W = dTimePos.*pData2.*exp( -deltaTime./pData4) -dTimeNeg.*pData3.*exp( deltaTime./pData5); 
+W = dTimePos.*pData2.*exp( -deltaTime./pData4) -dTimeNeg.*pData3.*exp( deltaTime./pData5);
 end

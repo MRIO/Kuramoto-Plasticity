@@ -83,11 +83,11 @@ connectivity = zeros(N*M);
 plasticity = {'STDP' 1 [1 1] [10 10]}; %try different parameters STDP
 
 training = [100 7*2*pi];
-training_time = 0.5;
+training_time = 1;
 
 % Signal %
 training_signal = zeros(10);
-switch 4
+switch 1
     case 1
         training_signal(:,1:3)=pi;
         training_signal(:,7:10)=4*pi/3;
@@ -182,7 +182,7 @@ training_time = 1;
 
 % Signal %
 training_signal = zeros(10);
-switch 4
+switch 2
     case 1 % 3cluster
         training_signal(:,1:3)=2/3*pi;
         training_signal(:,7:10)=4/3*pi;
@@ -318,7 +318,7 @@ N=10;M=10;
 %PP = test_STDP_Random05_training{2}.state;
 %PP = test_STDP_Random05_4cluster{3}.state;
 
-PP = out2.state(:,9001:end);
+PP = out2.state(:,1:end);
 %PP = out1.state;
 %PP = result.state;
 %PP = clustered_state;
