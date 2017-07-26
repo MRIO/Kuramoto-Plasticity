@@ -182,7 +182,7 @@ training_time = 1;
 
 % Signal %
 training_signal = zeros(10);
-switch 2
+switch 4
     case 1 % 3cluster
         training_signal(:,1:3)=2/3*pi;
         training_signal(:,7:10)=4/3*pi;

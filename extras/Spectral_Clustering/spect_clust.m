@@ -36,7 +36,7 @@ gc = zeros(ncl_limit,1);
 
 for i=1:ncl_limit
     [g1, n1] = max(diff(d.^i));
-    nc(i) = n1+1;
+    nc(i) = n1;
     gc(i) = g1;
 end
 
