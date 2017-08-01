@@ -51,7 +51,7 @@ TauP  = [0.01 1 50];
 totalIter = sigP(3)*TauP(3);
 disp(['Simulation will run for ' mat2str(totalIter) ' iterations.'])
 
-cd ~
+cd ~/OliveTree/functions/simulation/
 
 for ss = 1:sigP(3)
     for TT = 1:TauP(3)
