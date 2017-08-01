@@ -7,8 +7,8 @@ addpath extras/
 addpath extras/Spectral_Clustering/
 
 %%% File/Folder Management %%%
-outputFolder = 'C:\Users\Jeroen\Documents\GitHub\OliveTree\data\script_parameterAnalysis\';
-%outputFolder = '~/jeroenBulk/OliveTreeData/parameterAnalysis/';
+%outputFolder = 'C:\Users\Jeroen\Documents\GitHub\OliveTree\data\script_parameterAnalysis\';
+outputFolder = '~/jeroenBulk/OliveTreeData/parameterAnalysis/';
 name = strrep(mat2str(clock),' ','_');
 outputFolder2 = [outputFolder name];
 mkdir(outputFolder2);
@@ -50,6 +50,8 @@ TauP  = [0.01 1 50];
 
 totalIter = sigP(3)*TauP(3);
 disp(['Simulation will run for ' mat2str(totalIter) ' iterations.'])
+
+cd ~
 
 for ss = 1:sigP(3)
     for TT = 1:TauP(3)
