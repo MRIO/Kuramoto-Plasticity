@@ -1,8 +1,8 @@
 clear
 
 % kuramotoSheet Profiling
-N = 10;
-M = 10;
+N = 50;
+M = 50;
 
 sigmoid = [10 0.5];
 sigmoid2 = [10 0.5];

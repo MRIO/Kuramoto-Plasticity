@@ -177,11 +177,11 @@ init_scaling = 0;
 decay = 0;
 decay2 = 0;
 
-training = [100 10*2*pi];
-training_time = 1;
+%training = [100 10*2*pi];
+%training_time = 1;
 
 % Signal %
-training_signal = zeros(10);
+%training_signal = zeros(10);
 switch 4
     case 1 % 3cluster
         training_signal(:,1:3)=2/3*pi;
@@ -196,14 +196,14 @@ switch 4
         training_signal(:,1:5) = pi;
     case 5 %uniform
 end
-training_signal = reshape(training_signal,100,1);
+%training_signal = reshape(training_signal,100,1);
 %%%%%%%%%%
 
 
-time = 1;
-steps = 1000;
-out1 = kuramotoSheet([10 10],scaling,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time);
-out2 = kuramotoSheet([10 10],scaling2,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time);
+time = 10;
+steps = 10000;
+out1 = kuramotoSheet([50 50],scaling,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time);
+%out2 = kuramotoSheet([50 50],scaling2,'plotme', 0,'connectivity', 'all to all', 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity2,'sigmoid',sigmoid2, 'init_scaling',init_scaling, 'decay', decay2,'training', training, 'training_signal', training_signal,'training_time', training_time);
 
 close all
 

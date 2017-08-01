@@ -25,7 +25,7 @@ copyfile(code,outputFolder);
 
 N = 10; M = 10;
 
-init_struct = struct('dw',{},'dwabs',{},'cc',{},'c',{},'bic',{},'aic',{}); %Make sure the output struct and init_struct have the same order, it really likes to bitch about this.
+init_struct = struct('dw',{},'dwabs',{},'parameters',{},'cc',{},'c',{},'bic',{},'aic',{}); %Make sure the output struct and init_struct have the same order, it really likes to bitch about this.
 init_struct(N,M).cc = [];
 outFile.out1 = init_struct;
 outFile.out2 = init_struct;
@@ -47,10 +47,13 @@ for ss=1:N
         
         output{1,TT}.dw     = data1(1,TT).dw;
         output{1,TT}.dwabs  = data1(1,TT).dwabs;
+        output{1,TT}.parameters = data1(1,TT).parameters;
         output{2,TT}.dw     = data2(1,TT).dw;
         output{2,TT}.dwabs  = data2(1,TT).dwabs;
+        output{2,TT}.parameters = data2(1,TT).parameters;
         output{3,TT}.dw     = data3(1,TT).dw;
         output{3,TT}.dwabs  = data3(1,TT).dwabs;
+        output{3,TT}.parameters = data3(1,TT).parameters;
         
         for ii=1:3
             if any(any(isnan(states{ii})))
@@ -59,14 +62,13 @@ for ss=1:N
                 output{ii,TT}.bic = NaN;
                 output{ii,TT}.aic = NaN;
                 continue
-            end
-            x = sin(states{ii}(:,9001:end));
-            cc = partialcorr(x', mean(x)'); % partial corherelation w.r.t the mean
-            rho = (cc + 1)/2; % normalize rho to get an affinity matrix 0<=rho<=1
-            rho = (rho+rho')/2; % rho had better be symmetric
-            c = spect_clust(rho, 20);
-            [bic, aic] = baic(x, c);
+            end           
             
+            x = states{ii}(:,9001:end);
+            cc = calcSimilarity(x);
+            c = spect_clust(cc, 20);
+            [bic, aic] = baic(x, c);
+
             output{ii,TT}.cc = cc;
             output{ii,TT}.c = c;
             output{ii,TT}.bic = bic;
