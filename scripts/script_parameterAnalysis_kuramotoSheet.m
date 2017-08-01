@@ -1,20 +1,26 @@
 clear
 
+addpath functions
+addpath functions/simulation/
+addpath scripts/
+addpath extras/
+addpath extras/Spectral_Clustering/
+
 %%% File/Folder Management %%%
-%outputFolder = 'C:\Users\Jeroen\Documents\GitHub\OliveTree\data\script_parameterAnalysis\';
-outputFolder = '~/jeroenBulk/OliveTreeData/parameterAnalysis/';
+outputFolder = 'C:\Users\Jeroen\Documents\GitHub\OliveTree\data\script_parameterAnalysis\';
+%outputFolder = '~/jeroenBulk/OliveTreeData/parameterAnalysis/';
 name = strrep(mat2str(clock),' ','_');
 outputFolder2 = [outputFolder name];
 mkdir(outputFolder2);
 code = [mfilename('fullpath') '.m'];
 copyfile(code,outputFolder2);
-outputFile = [outputFolder2 '/' name '.mat'];
+outputFile = [outputFolder2 '\' name '.mat'];
 
 file = matfile(outputFile,'Writable', true);
 
 disp(' ')
 disp(['Starting time ' name])
-disp(['Output will be saved to: ' outputFile '.mat'])
+disp(['Output will be saved to: ' outputFile])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % STATIC PARAMS
