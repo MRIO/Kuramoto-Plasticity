@@ -11,8 +11,10 @@
 % committing to the whole thing.
 %% Load File
 clear
-[filename, outputFolder] = uigetfile('*.mat','Select the file containing the parameterAnalysis data');
+%[filename, outputFolder] = uigetfile('*.mat','Select the file containing the parameterAnalysis data');
 
+filename = '[2017_8_1_16_37_23.28271].mat';
+outputFolder = '~/jeroenBulk/OliveTreeData/parameterAnalysis/[2017_8_1_16_37_23.28271]/'
 inputFile    = [outputFolder filename];
 outputFile   = [outputFolder 'analysis.mat'];
 
@@ -23,8 +25,8 @@ outFile      = matfile(outputFile, 'Writable', true);
 code         = [mfilename('fullpath') '.m'];
 copyfile(code,outputFolder);
 
-N = 10; M = 10;
-
+N = 35; M = 35;
+cd ~/OliveTree/extras/Spectral_Clustering/
 init_struct = struct('dw',{},'dwabs',{},'parameters',{},'cc',{},'c',{},'bic',{},'aic',{}); %Make sure the output struct and init_struct have the same order, it really likes to bitch about this.
 init_struct(N,M).cc = [];
 outFile.out1 = init_struct;

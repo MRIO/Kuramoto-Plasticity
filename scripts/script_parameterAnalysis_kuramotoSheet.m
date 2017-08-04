@@ -1,11 +1,5 @@
 clear
 
-addpath functions
-addpath functions/simulation/
-addpath scripts/
-addpath extras/
-addpath extras/Spectral_Clustering/
-
 %%% File/Folder Management %%%
 %outputFolder = 'C:\Users\Jeroen\Documents\GitHub\OliveTree\data\script_parameterAnalysis\';
 outputFolder = '~/jeroenBulk/OliveTreeData/parameterAnalysis/';
@@ -14,7 +8,7 @@ outputFolder2 = [outputFolder name];
 mkdir(outputFolder2);
 code = [mfilename('fullpath') '.m'];
 copyfile(code,outputFolder2);
-outputFile = [outputFolder2 '\' name '.mat'];
+outputFile = [outputFolder2 '/' name '.mat'];
 
 file = matfile(outputFile,'Writable', true);
 
@@ -24,11 +18,11 @@ disp(['Output will be saved to: ' outputFile])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % STATIC PARAMS
-N = 50; M = 50;
+N = 10; M = 10;
 scaling = 4*pi;
 
 connectivity = {'euclidean' 'all to all' 'null'};
-radius = 5;
+radius = 2;
 init_scaling = 0.6;
 
 sigmoid = [10 0.5];
@@ -45,8 +39,8 @@ training_signal = [];
 record_adjacency = 0;
 
 % DYNAMIC PARAMS - [initial (minus 1 step), final, steps]
-sigP  = [0 10 50];
-TauP  = [0.01 1 50];
+sigP  = [0 10 35];
+TauP  = [0.01 1 35];
 
 totalIter = sigP(3)*TauP(3);
 disp(['Simulation will run for ' mat2str(totalIter) ' iterations.'])
@@ -91,3 +85,6 @@ for ss = 1:sigP(3)
         disp(['Last iteration took ' mat2str(timeIter) ' seconds. Estimated time remaining is ' mat2str(floor((totalIter-curIter)*timeIter/60)) ' minutes.'])
     end
 end
+
+disp('Program finished, exiting.')
+exit;
