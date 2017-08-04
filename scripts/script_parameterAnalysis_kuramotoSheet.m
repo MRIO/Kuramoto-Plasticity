@@ -7,8 +7,8 @@ addpath extras/
 addpath extras/Spectral_Clustering/
 
 %%% File/Folder Management %%%
-%outputFolder = 'C:\Users\Jeroen\Documents\GitHub\OliveTree\data\script_parameterAnalysis\';
-outputFolder = '~/jeroenBulk/OliveTreeData/parameterAnalysis/';
+outputFolder = 'C:\Users\Jeroen\Documents\GitHub\OliveTree\data\script_parameterAnalysis\';
+%outputFolder = '~/jeroenBulk/OliveTreeData/parameterAnalysis/';
 name = strrep(mat2str(clock),' ','_');
 outputFolder2 = [outputFolder name];
 mkdir(outputFolder2);
@@ -24,7 +24,7 @@ disp(['Output will be saved to: ' outputFile])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % STATIC PARAMS
-N = 50; M = 50;
+N = 10; M = 10;
 scaling = 4*pi;
 
 connectivity = {'euclidean' 'all to all' 'null'};
@@ -45,13 +45,13 @@ training_signal = [];
 record_adjacency = 0;
 
 % DYNAMIC PARAMS - [initial (minus 1 step), final, steps]
-sigP  = [0 10 50];
-TauP  = [0.01 1 50];
+sigP  = [0 10 20];
+TauP  = [0.01 1 20];
 
 totalIter = sigP(3)*TauP(3);
 disp(['Simulation will run for ' mat2str(totalIter) ' iterations.'])
 
-cd ~/OliveTree/functions/simulation/
+%cd ~/OliveTree/functions/simulation/
 
 for ss = 1:sigP(3)
     for TT = 1:TauP(3)
@@ -77,6 +77,12 @@ for ss = 1:sigP(3)
         out2 = kuramotoSheet([N M],scaling,'plotme', 0, 'record_adjacency', record_adjacency', 'connectivity', connectivity{2}, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
         out3 = kuramotoSheet([N M],scaling,'plotme', 0, 'record_adjacency', record_adjacency', 'connectivity', connectivity{3}, 'radius', radius, 'oscillators',oscillators, 'time', time, 'dt', time/steps, 'plasticity', plasticity,'sigmoid',sigmoid, 'init_scaling',init_scaling, 'decay', decay,'training', training, 'training_signal', training_signal,'training_time', training_time, 'stepval',stepval);
         
+        out1.sigVal = sigVal;
+        out1.TauVal = Tauval;
+        out2.sigVal = sigVal;
+        out2.TauVal = Tauval;
+        out3.sigVal = sigVal;
+        out3.TauVal = Tauval;
         fields = {'phase', 'connectivity', 'oscillators'};
         out1 = rmfield(out1,fields);
         out2 = rmfield(out2,fields);
