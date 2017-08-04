@@ -29,7 +29,8 @@ copyfile(code,outputFolder);
 
 N = 35; M = 35;
 cd ~/OliveTree/extras/Spectral_Clustering/
-init_struct = struct('dw',{},'dwabs',{},'parameters',{},'sigVal',{},'TauVal',{},'cc',{},'c',{},'bic',{},'aic',{}); %Make sure the output struct and init_struct have the same order, it really likes to bitch about this.
+%init_struct = struct('dw',{},'dwabs',{},'parameters',{},'sigVal',{},'TauVal',{},'cc',{},'c',{},'bic',{},'aic',{}); %Make sure the output struct and init_struct have the same order, it really likes to bitch about this.
+init_struct = struct('dw',{},'dwabs',{},'parameters',{},'cc',{},'c',{},'bic',{},'aic',{}); %Make sure the output struct and init_struct have the same order, it really likes to bitch about this.
 init_struct(N,M).cc = [];
 outFile.out1 = init_struct;
 outFile.out2 = init_struct;
@@ -52,18 +53,18 @@ for ss=1:N
         output{1,TT}.dw     = data1(1,TT).dw;
         output{1,TT}.dwabs  = data1(1,TT).dwabs;
         output{1,TT}.parameters = data1(1,TT).parameters;
-        output{1,TT}.sigVal = data1(1,TT).sigVal;
-        output{1,TT}.TauVal = data1(1,TT).TauVal;
+        %output{1,TT}.sigVal = data1(1,TT).sigVal;
+        %output{1,TT}.TauVal = data1(1,TT).TauVal;
         output{2,TT}.dw     = data2(1,TT).dw;
         output{2,TT}.dwabs  = data2(1,TT).dwabs;
         output{2,TT}.parameters = data2(1,TT).parameters;
-        output{2,TT}.sigVal = data2(1,TT).sigVal;
-        output{2,TT}.TauVal = data2(1,TT).TauVal;
+        %output{2,TT}.sigVal = data2(1,TT).sigVal;
+        %output{2,TT}.TauVal = data2(1,TT).TauVal;
         output{3,TT}.dw     = data3(1,TT).dw;
         output{3,TT}.dwabs  = data3(1,TT).dwabs;
         output{3,TT}.parameters = data3(1,TT).parameters;
-        output{3,TT}.sigVal = data3(1,TT).sigVal;
-        output{3,TT}.TauVal = data3(1,TT).TauVal;
+        %output{3,TT}.sigVal = data3(1,TT).sigVal;
+        %output{3,TT}.TauVal = data3(1,TT).TauVal;
         
         for ii=1:3
             if any(any(isnan(states{ii})))
@@ -90,9 +91,9 @@ for ss=1:N
         clear states
     end
     
-    outFile.out1(ss,:) = output{1,:};
-    outFile.out2(ss,:) = output{2,:};
-    outFile.out3(ss,:) = output{3,:};
+    outFile.out1(ss,:) = output(1,:);
+    outFile.out2(ss,:) = output(2,:);
+    outFile.out3(ss,:) = output(3,:);
     
     clear output
     iterTime = toc;
