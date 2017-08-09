@@ -15,7 +15,7 @@ clf
 
 %x = sin(out2.state(:,9001:end));
 %x = diff(out2.phase(:,200:end)');
-x = out2.state(:,200:end);
+x = out1.state(:,9001:end);
 cc = calcSimilarity(x);
 
 %%

@@ -1,0 +1,3 @@
+function out= kuramotoParams(parameters)
+out = kuramotoSheet(parameters.networksize,parameters.scaling,'plotme',parameters.plotme,'connectivity',parameters.connectivity,'decay',parameters.decay,'dt',parameters.dt,'GPU',parameters.GPU,'init_cond',parameters.init_cond,'init_scaling',parameters.init_scaling,'omega_mean',parameters.omega_mean,'omega_std',parameters.omega_std,'oscillators',parameters.oscillators,'plasticity',parameters.plasticity,'radius',parameters.radius,'record_adjacency',parameters.record_adjacency,'seed',parameters.seed,'sigmoid',parameters.sigmoid,'stepval',parameters.stepval,'time',parameters.time,'training',parameters.training,'training_signal',parameters.training_signal,'training_time',parameters.training_time);
+end

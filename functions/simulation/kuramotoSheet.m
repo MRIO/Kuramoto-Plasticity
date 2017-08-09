@@ -231,7 +231,7 @@ if record_adjacency
     adjacency{1} = sConnectivity;
 end
 
-if plotme; f = figure(100); a(1) = subplot(121);a(2) = subplot(122); end
+if plotme; f = figure(100); end
 for t = 2:simtime/dt
     phasedifferences = bsxfun(@minus, theta_t(:,t-1)',theta_t(:,t-1));
     
@@ -344,13 +344,6 @@ if plotme
     xlabel('frequency (Hz)')
     
     figure(f)
-    axes(a(2))
-    line(repmat(linspace(0,simtime, simtime*dt^-1), length(unique(idx)), 1)', [abs(k)]')
-    
-    
-    title('kuramoto parameter')
-    xlabel('time (ms)')
-    ylim([0 1])
     
     [XX YY] = meshgrid([1:M],[1:N]);
     XX = XX(:); YY = YY(:);
@@ -359,23 +352,21 @@ if plotme
     if exist('linspecer','file')
         LSpec = linspecer(length(unique(idx)))
         set(ffff, 'colormap',   LSpec);
-        set(a(1), 'colororder', LSpec);
-        set(a(2), 'colororder', LSpec);
+
     else
         set(ffff, 'colormap',   jet(length(unique(idx))));
-        set(a(1), 'colororder', jet(length(unique(idx))));
-        set(a(2), 'colororder', jet(length(unique(idx))));
+
     end
     
     
     while anim
         
         for t = 2:simtime/dt
-            if ~ishghandle(a(1))
+            if ~ishghandle(f)
                 break;
             end
             SS = reshape(PP(:,t),N,M);
-            axes(a(1)); 			cla
+            cla
             % imagesc(reshape(theta_t(:,t),N,M))
             mesh(SS); hold on
             scatter3(XX, YY ,PP(:,t),60,LSpec(idx,:),'filled')
@@ -391,7 +382,7 @@ if plotme
             
         end
         
-        if ~ishghandle(a(1))
+        if ~ishghandle(f)
             break;
         end
         anim = input(['repeat? ; 0 - no, 1 - yes \n'  ])
