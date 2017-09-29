@@ -8,7 +8,7 @@ scaling = 4*pi;
 % scaling 4*pi, tau 002 latest optimal values for 3cluster 0625
 
 plasticity = {'STDP' 0.1 [1 1] [0.002 0.002]}; %try different parameters STDP
-plasticity2 = {'null' 0.1 [1 0] [0.002 0.002]}; %try different parameters STDP
+plasticity2 = {'null' 0.1 [1 1] [0.002 0.002]}; %try different parameters STDP
 
 sigmoid = [0 0.5];
 init_scaling = 0;
@@ -106,16 +106,16 @@ init_cond = rand(N*M,1)*2*pi;
 connectivity = zeros(N*M);
 
 %plasticity = {'seliger' 10 100};
-plasticity = {'STDP' 1 [1 1] [10 10]}; %try different parameters STDP
+plasticity = {'null' 1 [1 1] [10 10]}; %try different parameters STDP
 
 training = [100 7*2*pi];
-training_time = 1;
+training_time = 0;
 
 % Signal %
 training_signal = zeros(10);
 switch 1
     case 1
-        training_signal(:,1:3)=pi;
+        training_signal(:,1:3)=2*pi/3;
         training_signal(:,7:10)=4*pi/3;
     case 2
         training_signal(6:10,1:5)=pi/2;
